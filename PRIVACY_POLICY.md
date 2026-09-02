@@ -2,13 +2,11 @@
 
 **Last updated: 2 September 2026**
 
-> **Before you publish:** replace `[YOUR NAME / COMPANY]` and
-> `[YOUR CONTACT EMAIL]` below, host this page publicly (GitHub Pages works),
-> then put the URL in **both** the Play Console listing and
-> `EXPO_PUBLIC_PRIVACY_POLICY_URL`. This text describes what the app in this
-> repository actually does — if you change what it collects, change this too.
+> **Published at** <https://maliqhassan.github.io/unbreakable-appblock/>.
+> The live page is [docs/index.html](docs/index.html); this Markdown copy is the
+> source of record. Change both together.
 
-Unbreakable Lock ("the app") is provided by [YOUR NAME / COMPANY]. This policy
+Unbreakable Lock ("the app") is provided by Malik Hassan. This policy
 explains what the app collects, what it does not, and what choices you have.
 
 ## The short version
@@ -54,8 +52,10 @@ to identify your account so a Pro subscription follows you to a new phone.
 
 We never see, store or handle your password. Google does not share it with us.
 
-**Deleting your account.** Account → Delete account removes your account and the
-app data saved on this device. It is immediate and permanent.
+**Deleting your account.** In the app, Account → Delete account removes your
+account and the app data saved on that device. It is immediate and permanent. If
+you have already uninstalled the app, use the deletion request page at
+<https://maliqhassan.github.io/unbreakable-appblock/delete-account.html>.
 
 ## Purchases
 
@@ -112,4 +112,4 @@ If this policy changes, the date at the top changes with it.
 
 ## Contact
 
-[YOUR CONTACT EMAIL]
+malikhassan32176@gmail.com

@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Delete your account — Unbreakable Lock</title>
+<meta name="description" content="How to delete your Unbreakable Lock account and the data associated with it.">
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #ffffff;
+    --surface: #f6f7f9;
+    --text: #16181d;
+    --muted: #5b6472;
+    --border: #e3e6ea;
+    --accent: #4f46e5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0e1014;
+      --surface: #171a21;
+      --text: #e9ecf1;
+      --muted: #9aa4b2;
+      --border: #262b34;
+      --accent: #8b8cf7;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 40px 20px 72px; }
+  header { border-bottom: 1px solid var(--border); padding-bottom: 24px; margin-bottom: 32px; }
+  h1 { font-size: 1.85rem; line-height: 1.2; margin: 0 0 8px; letter-spacing: -0.02em; }
+  h2 { font-size: 1.2rem; margin: 40px 0 12px; letter-spacing: -0.01em; }
+  .meta { color: var(--muted); font-size: 0.9rem; margin: 0; }
+  .step {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin: 20px 0;
+  }
+  .step h2 { margin-top: 0; }
+  a { color: var(--accent); }
+  ul, ol { padding-left: 22px; }
+  li { margin: 6px 0; }
+  .mail {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    text-decoration: none;
+    padding: 11px 18px;
+    border-radius: 8px;
+    font-weight: 600;
+    margin-top: 6px;
+  }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.94rem; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  .tablewrap { overflow-x: auto; }
+  footer { margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.9rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Delete your Unbreakable Lock account</h1>
+  <p class="meta">Two ways to do it. Both delete the same thing.</p>
+</header>
+
+<div class="step">
+  <h2>1. In the app — instant</h2>
+  <p>If you still have Unbreakable Lock installed, this is the fastest route and
+  takes effect immediately:</p>
+  <ol>
+    <li>Open <strong>Unbreakable Lock</strong>.</li>
+    <li>Tap the account button, or go to <strong>Account</strong>.</li>
+    <li>Scroll to the bottom and tap <strong>Delete account</strong>.</li>
+    <li>Confirm.</li>
+  </ol>
+</div>
+
+<div class="step">
+  <h2>2. By email — if you have uninstalled the app</h2>
+  <p>Send a deletion request from the email address you signed in with, so we can
+  confirm the account is yours.</p>
+  <p><a class="mail" href="mailto:malikhassan32176@gmail.com?subject=Delete%20my%20Unbreakable%20Lock%20account">Email a deletion request</a></p>
+  <p class="meta">Requests are actioned within 30 days, normally much sooner.</p>
+</div>
+
+<h2>What gets deleted</h2>
+<div class="tablewrap">
+<table>
+  <thead>
+    <tr><th>Data</th><th>What happens</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Your account (email address, and name and profile picture if you used Google Sign-In)</td>
+      <td>Permanently deleted</td>
+    </tr>
+    <tr>
+      <td>Your blocked app list, schedules and daily limits</td>
+      <td>Deleted from the device when you delete in the app. This data only ever
+      existed on your phone — it was never uploaded, so there is no copy elsewhere
+      to delete.</td>
+    </tr>
+    <tr>
+      <td>App usage figures</td>
+      <td>Never left your device. Removed when you uninstall the app.</td>
+    </tr>
+    <tr>
+      <td>Subscription and purchase records</td>
+      <td>Held by Google Play and RevenueCat as a record of the transaction.
+      Deleting your account does not cancel a subscription — see below.</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h2>Two things worth knowing first</h2>
+<ul>
+  <li><strong>Deleting your account does not cancel a Pro subscription.</strong>
+  Subscriptions are billed by Google Play, not by us. Cancel it in the Play Store
+  under <em>Subscriptions</em>, or you will continue to be charged.</li>
+  <li><strong>Deletion is permanent.</strong> There is no recovery, and a Pro
+  entitlement tied to that account may not transfer to a new one. If you only
+  want to stop using the app, uninstalling is enough.</li>
+</ul>
+
+<h2>Retention</h2>
+<p>Once deleted, the account record is removed from Firebase Authentication and is
+not retained. Google Play may retain transaction records independently of us,
+where required for tax and accounting.</p>
+
+<footer>
+  Unbreakable Lock · <a href="index.html">Privacy policy</a> ·
+  <a href="mailto:malikhassan32176@gmail.com">malikhassan32176@gmail.com</a>
+</footer>
+
+</div>
+</body>
+</html>
