@@ -89,10 +89,21 @@ object DailyLimitEngine {
 
         for (limit in limits) {
             val used = usage[limit.packageName] ?: 0L
-            if (used >= limit.limitSeconds) {
-                exhausted.add(limit.packageName)
-                if (limit.strictMode) strict = true
-            }
+            if (used < limit.limitSeconds) continue
+
+            // The allowance is spent. Unless the user has bought themselves
+            // time from the block screen, this app is locked.
+            //
+            // Strict Mode is checked here rather than trusted from the stored
+            // override: turning Strict Mode on must close the door immediately,
+            // even on an override granted minutes earlier under the old setting.
+            val reprieved =
+                !limit.strictMode && DailyLimitStore.overrideUntil(app, limit.packageName, nowMs) > 0L
+
+            if (reprieved) continue
+
+            exhausted.add(limit.packageName)
+            if (limit.strictMode) strict = true
         }
 
         // Defence in depth, matching the manual path: a limit must never be able

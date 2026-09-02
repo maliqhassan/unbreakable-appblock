@@ -29,6 +29,15 @@ object EffectiveLock {
         val scheduleNames: Set<String>,
         /** Packages locked because their daily allowance is spent. */
         val dailyLimitPackages: Set<String>,
+        /**
+         * Packages locked by a manual lock or a schedule.
+         *
+         * Kept separate so the block screen can tell whether ignoring a daily
+         * limit would actually let the user back in. Offering "ignore limit"
+         * for an app a manual lock also covers would be a button that does
+         * nothing.
+         */
+        val nonDailyPackages: Set<String>,
         /** Epoch ms of the next local midnight, when allowances reset. */
         val resetsAt: Long,
         val degradedReason: String?
@@ -53,6 +62,7 @@ object EffectiveLock {
                 sources = emptyList(),
                 scheduleNames = emptySet(),
                 dailyLimitPackages = emptySet(),
+                nonDailyPackages = emptySet(),
                 resetsAt = daily.resetsAt,
                 // A degraded reason is still worth surfacing even when nothing
                 // is running; it explains why the last session stopped working,
@@ -62,12 +72,14 @@ object EffectiveLock {
         }
 
         val packages = HashSet<String>()
+        val nonDaily = HashSet<String>()
         val sources = ArrayList<String>(2)
         var strict = false
         var end = 0L
 
         if (manualActive) {
             packages.addAll(manual.packages)
+            nonDaily.addAll(manual.packages)
             strict = strict || manual.strictMode
             end = maxOf(end, manual.endWallMs)
             sources.add("manual")
@@ -75,6 +87,7 @@ object EffectiveLock {
 
         if (scheduleActive) {
             packages.addAll(schedule.packages)
+            nonDaily.addAll(schedule.packages)
             strict = strict || schedule.strictMode
             end = maxOf(end, schedule.endWallMs)
             sources.add("schedule")
@@ -98,6 +111,7 @@ object EffectiveLock {
             sources = sources,
             scheduleNames = if (scheduleActive) schedule.scheduleNames else emptySet(),
             dailyLimitPackages = if (dailyActive) daily.packages else emptySet(),
+            nonDailyPackages = nonDaily,
             resetsAt = daily.resetsAt,
             degradedReason = manual.degradedReason ?: daily.degradedReason
         )

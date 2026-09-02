@@ -361,6 +361,12 @@ class LockForegroundService : Service() {
             return
         }
 
+        // The user bought time from the block screen. Re-measuring every tick
+        // while that runs would just re-lock them a second later, and would run
+        // a usage query every second for nothing. The grant expires on its own,
+        // and the tick after that lands here again.
+        if (DailyLimitStore.overrideUntil(this, packageName) > 0L) return
+
         val used = UsageQuery.usageTodaySeconds(this, packageName) ?: return
         if (used < limit.limitSeconds) return
 
@@ -444,6 +450,22 @@ class LockForegroundService : Service() {
             return
         }
 
+        val limit = DailyLimitStore.readLimits(this)
+            .firstOrNull { it.enabled && it.packageName == packageName }
+
+        val dailyLimitBlock = state.dailyLimitPackages.contains(packageName)
+        val limitMinutes = ((limit?.limitSeconds ?: 0L) / 60L).toInt()
+
+        // The "ignore limit" door opens only when every one of these holds:
+        // the block really is the daily limit, that limit is not strict, and no
+        // manual lock or schedule is covering the app as well. Ignoring the
+        // limit while a manual lock also blocks the app would be a button that
+        // changes nothing.
+        val canOverride = dailyLimitBlock &&
+            limit != null &&
+            !limit.strictMode &&
+            !state.nonDailyPackages.contains(packageName)
+
         val intent = Intent(this, BlockActivity::class.java)
             .addFlags(
                 Intent.FLAG_ACTIVITY_NEW_TASK or
@@ -453,6 +475,10 @@ class LockForegroundService : Service() {
             .putExtra(BlockActivity.EXTRA_PACKAGE, packageName)
             .putExtra(BlockActivity.EXTRA_END_TIMESTAMP, state.endWallMs)
             .putExtra(BlockActivity.EXTRA_STRICT, state.strictMode)
+            .putExtra(BlockActivity.EXTRA_DAILY_LIMIT, dailyLimitBlock)
+            .putExtra(BlockActivity.EXTRA_LIMIT_MINUTES, limitMinutes)
+            .putExtra(BlockActivity.EXTRA_CAN_OVERRIDE, canOverride)
+            .putExtra(BlockActivity.EXTRA_RESETS_AT, state.resetsAt)
 
         try {
             startActivity(intent)

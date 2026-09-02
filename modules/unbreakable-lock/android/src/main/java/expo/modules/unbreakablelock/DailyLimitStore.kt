@@ -22,6 +22,9 @@ object DailyLimitStore {
     private const val KEY_MEASURED_DAY = "measured_day"
     private const val KEY_MEASURED_AT = "measured_at"
 
+    /** package -> epoch ms until which a spent allowance is being ignored. */
+    private const val KEY_OVERRIDES = "overrides"
+
     data class LockState(
         val active: Boolean,
         val packages: Set<String>,
@@ -110,5 +113,73 @@ object DailyLimitStore {
     fun isActive(context: Context, now: Long = System.currentTimeMillis()): Boolean {
         val state = readLockState(context)
         return state.active && state.packages.isNotEmpty() && now < state.resetsAt
+    }
+
+    // MARK: - Overrides
+    //
+    // A deliberate, user-granted extension past a spent allowance: "one more
+    // minute", a snooze, or the rest of today. Stored as an expiry timestamp
+    // per package, so an override needs no clean-up — it simply stops applying,
+    // and one set to the next midnight expires with the day it belonged to.
+    //
+    // Only ever created from the block screen, and only when Strict Mode is off
+    // for that limit. Strict Mode's whole promise is that there is no such door.
+
+    /**
+     * @return the epoch ms this package may be used until, or 0 when there is
+     *   no override in force.
+     */
+    fun overrideUntil(
+        context: Context,
+        packageName: String,
+        now: Long = System.currentTimeMillis()
+    ): Long {
+        val until = readOverrides(context)[packageName] ?: return 0L
+        return if (until > now) until else 0L
+    }
+
+    fun setOverride(context: Context, packageName: String, untilMs: Long) {
+        val next = HashMap(readOverrides(context))
+        next[packageName] = untilMs
+        writeOverrides(context, next)
+    }
+
+    /** Every override still in force, keyed by package. */
+    fun activeOverrides(
+        context: Context,
+        now: Long = System.currentTimeMillis()
+    ): Map<String, Long> = readOverrides(context).filterValues { it > now }
+
+    fun clearOverride(context: Context, packageName: String) {
+        val next = HashMap(readOverrides(context))
+        if (next.remove(packageName) != null) writeOverrides(context, next)
+    }
+
+    private fun readOverrides(context: Context): Map<String, Long> {
+        val raw = prefs(context).getString(KEY_OVERRIDES, null) ?: return emptyMap()
+        return try {
+            val json = org.json.JSONObject(raw)
+            val out = HashMap<String, Long>(json.length())
+            for (key in json.keys()) out[key] = json.optLong(key, 0L)
+            out
+        } catch (e: Exception) {
+            // A corrupt record must not permanently disable enforcement; the
+            // safe reading of "unknown" here is "no override".
+            emptyMap()
+        }
+    }
+
+    /**
+     * Expired entries are dropped on every write, so the record cannot grow
+     * without bound as days pass.
+     */
+    @Suppress("ApplySharedPref")
+    private fun writeOverrides(context: Context, overrides: Map<String, Long>) {
+        val now = System.currentTimeMillis()
+        val json = org.json.JSONObject()
+        for ((pkg, until) in overrides) {
+            if (until > now) json.put(pkg, until)
+        }
+        prefs(context).edit().putString(KEY_OVERRIDES, json.toString()).commit()
     }
 }
