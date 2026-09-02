@@ -112,4 +112,4 @@ If this policy changes, the date at the top changes with it.
 
 ## Contact
 
-malikhassan32176@gmail.com
+malikhassan2981@gmail.com
