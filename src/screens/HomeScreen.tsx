@@ -150,6 +150,10 @@ export function HomeScreen({ navigation }: ScreenProps<'Home'>) {
           />
         </View>
 
+        {/* Directly under the hero: a manual lock is what you do today, a daily
+            limit is what keeps working every day after. It earns the position. */}
+        <DailyLimitsCard limits={dailyLimits} statuses={dailyStatuses} />
+
         {/* Two-up status grid: protection on the left, plan on the right. */}
         <View style={styles.grid}>
           <Tile
@@ -165,8 +169,6 @@ export function HomeScreen({ navigation }: ScreenProps<'Home'>) {
             onPress={() => navigation.navigate('Subscription')}
           />
         </View>
-
-        <DailyLimitsCard limits={dailyLimits} statuses={dailyStatuses} />
 
         <SchedulesCard schedules={schedules} now={now} />
 
@@ -260,56 +262,124 @@ function DailyLimitsCard({
   const navigation = useNavigation();
   const rows = pairLimits(limits, statuses).slice(0, 3);
   const exhausted = statuses.filter((s) => s.exhausted).length;
+  const empty = rows.length === 0;
+
+  const open = () => navigation.navigate('DailyLimits');
 
   return (
     <Pressable
       testID="home-daily-limits"
       accessibilityRole="button"
       accessibilityLabel="Daily limits"
-      onPress={() => navigation.navigate('DailyLimits')}
+      onPress={open}
       style={({ pressed }) => [
-        styles.panel,
+        styles.featurePanel,
         {
-          backgroundColor: colors.surface,
-          borderColor: exhausted > 0 ? colors.danger : colors.border,
+          // Tinted rather than plain: this is the feature people come back to
+          // daily, and as a flat panel it read as one more list row.
+          backgroundColor: exhausted > 0 ? colors.surface : colors.accentSoft,
+          borderColor: exhausted > 0 ? colors.danger : colors.accent,
           opacity: pressed ? 0.85 : 1,
         },
       ]}
     >
       <View style={styles.panelHead}>
-        <Text style={[styles.eyebrow, { color: colors.textFaint }]}>Daily limits</Text>
-        <Text style={[styles.chevron, { color: colors.textFaint }]}>›</Text>
+        <Text style={[styles.eyebrow, { color: colors.accent }]}>Daily limits</Text>
+        <Text style={[styles.chevron, { color: colors.accent }]}>›</Text>
       </View>
 
-      {rows.length === 0 ? (
-        <Text style={[styles.panelBody, { color: colors.textMuted }]}>
-          Set a daily time budget for distracting apps.
-        </Text>
+      <Text style={[styles.featureTitle, { color: colors.text }]}>
+        {empty
+          ? 'Cap your time, every day'
+          : exhausted > 0
+            ? `${exhausted} limit${exhausted === 1 ? '' : 's'} reached today`
+            : `Tracking ${rows.length} app${rows.length === 1 ? '' : 's'} today`}
+      </Text>
+
+      {empty ? (
+        <>
+          <Text style={[styles.featureBody, { color: colors.textMuted }]}>
+            Give an app 15 minutes a day. When the time is gone, it locks itself
+            until tomorrow.
+          </Text>
+          <PrimaryButton
+            testID="home-daily-limits-cta"
+            label="Set a daily limit"
+            variant="secondary"
+            onPress={open}
+          />
+        </>
       ) : (
         rows.map(({ limit, status }) => (
-          <View key={limit.id} style={styles.limitRow}>
-            <Text
-              style={[styles.limitName, { color: colors.text }]}
-              numberOfLines={1}
-            >
-              {limit.appPackageName.split('.').pop()}
-            </Text>
-            <Text
-              style={[
-                styles.panelBody,
-                { color: status?.exhausted ? colors.danger : colors.textMuted },
-              ]}
-            >
-              {status?.exhausted
-                ? '🔒 Resets tomorrow'
-                : status
-                  ? formatUsageSummary(status)
-                  : 'Calculating…'}
-            </Text>
-          </View>
+          <DailyLimitBar key={limit.id} limit={limit} status={status} />
         ))
       )}
     </Pressable>
+  );
+}
+
+/**
+ * One app's day, as a bar.
+ *
+ * A number alone ("12m / 15m used") makes the reader do the arithmetic. The bar
+ * answers "how much is left?" before it is read, which is the only question
+ * anyone actually opens this screen with.
+ */
+function DailyLimitBar({
+  limit,
+  status,
+}: {
+  limit: DailyUsageLimit;
+  status: DailyUsageStatus | null;
+}) {
+  const { colors } = useTheme();
+
+  const used = status?.usageSeconds ?? null;
+  const fraction =
+    used == null || status == null || status.limitSeconds <= 0
+      ? 0
+      : Math.min(1, used / status.limitSeconds);
+
+  // Unknown usage is deliberately not drawn as an empty bar: "we could not
+  // measure" and "you have used none of it" must never look the same.
+  const unknown = used == null;
+  const tone = status?.exhausted
+    ? colors.danger
+    : fraction >= 0.8
+      ? colors.warning
+      : colors.accent;
+
+  return (
+    <View style={styles.limitBlock}>
+      <View style={styles.limitRow}>
+        <Text style={[styles.limitName, { color: colors.text }]} numberOfLines={1}>
+          {limit.appPackageName.split('.').pop()}
+        </Text>
+        <Text
+          style={[
+            styles.panelBody,
+            { color: status?.exhausted ? colors.danger : colors.textMuted },
+          ]}
+        >
+          {status?.exhausted
+            ? '🔒 Resets tomorrow'
+            : status
+              ? formatUsageSummary(status)
+              : 'Calculating…'}
+        </Text>
+      </View>
+
+      <View style={[styles.homeTrack, { backgroundColor: colors.surfaceMuted }]}>
+        {unknown ? null : (
+          <View
+            style={[
+              styles.homeFill,
+              { width: `${Math.round(fraction * 100)}%`, backgroundColor: tone },
+            ]}
+          />
+        )}
+      </View>
+    </View>
   );
 }
 
@@ -511,6 +581,33 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     padding: spacing.xl,
     gap: spacing.xs,
+  },
+  /** Same shape as `panel`, given more room and a heavier edge to lead with. */
+  featurePanel: {
+    borderWidth: 1.5,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
+    gap: spacing.sm,
+  },
+  featureTitle: {
+    ...typography.heading,
+    fontSize: 19,
+    marginBottom: spacing.xs,
+  },
+  featureBody: {
+    ...typography.body,
+    lineHeight: 21,
+    marginBottom: spacing.xs,
+  },
+  limitBlock: { gap: spacing.xs, marginTop: spacing.xs },
+  homeTrack: {
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  homeFill: {
+    height: 6,
+    borderRadius: 3,
   },
   panelHead: {
     flexDirection: 'row',

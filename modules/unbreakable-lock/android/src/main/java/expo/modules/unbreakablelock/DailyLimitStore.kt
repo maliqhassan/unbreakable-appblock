@@ -88,7 +88,11 @@ object DailyLimitStore {
         val p = prefs(context)
         return LockState(
             active = p.getBoolean(KEY_LOCK_ACTIVE, false),
-            packages = p.getStringSet(KEY_LOCK_PACKAGES, emptySet()) ?: emptySet(),
+            // Copied, not handed straight out. SharedPreferences documents the
+            // returned set as one you must not modify or hand back to
+            // putStringSet — and the engine does exactly that when it carries a
+            // previous day's state forward.
+            packages = HashSet(p.getStringSet(KEY_LOCK_PACKAGES, emptySet()) ?: emptySet()),
             strictMode = p.getBoolean(KEY_LOCK_STRICT, false),
             resetsAt = p.getLong(KEY_LOCK_RESETS_AT, 0L),
             degradedReason = p.getString(KEY_DEGRADED, null),

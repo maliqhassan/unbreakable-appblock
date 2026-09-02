@@ -145,7 +145,13 @@ class LockForegroundService : Service() {
 
     /** Fires exactly at the deadline rather than waiting for a poll to notice. */
     private val expiryRunnable = Runnable {
-        if (!EffectiveLock.isActive(this)) finishSession()
+        // `watching` matters as much as `active` here. A daily limit that has
+        // not been reached yet locks nothing, so the session looks finished
+        // while it is in fact the state the watcher exists to sit in. Shutting
+        // down here stopped daily limits from ever being enforced.
+        if (!EffectiveLock.isActive(this) && !DailyLimitStore.hasEnabledLimits(this)) {
+            finishSession()
+        }
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -240,6 +246,13 @@ class LockForegroundService : Service() {
     private fun scheduleExactExpiry() {
         val remaining = EffectiveLock.remainingMs(this)
         handler?.removeCallbacks(expiryRunnable)
+
+        // Nothing is locked, so there is no deadline to fire on. This is the
+        // normal state while watching daily limits, and posting a near-instant
+        // runnable here would just ask the service to reconsider shutting down
+        // every time it starts. The poll loop handles this state.
+        if (remaining <= 0L) return
+
         handler?.postDelayed(expiryRunnable, remaining + 250L)
     }
 
@@ -481,7 +494,9 @@ class LockForegroundService : Service() {
 
     private fun updateNotification() {
         val state = EffectiveLock.read(this)
-        if (!state.active) return
+        // Not `state.active`: while watching daily limits nothing is locked,
+        // and the notification still has to say so.
+        if (!state.active && !DailyLimitStore.hasEnabledLimits(this)) return
         try {
             val manager = getSystemService(NotificationManager::class.java) ?: return
             manager.notify(NOTIFICATION_ID, buildNotification(state))
