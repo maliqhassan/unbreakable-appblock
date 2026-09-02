@@ -2,10 +2,11 @@ import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as Linking from 'expo-linking';
 import { useEffect } from 'react';
-import { ActivityIndicator, StyleSheet, View, useColorScheme } from 'react-native';
+import { StyleSheet, View, useColorScheme } from 'react-native';
 
 import { AccountButton } from '../components/AccountButton';
 import { getColors } from '../constants/theme';
+import { LogoLoader } from '../components/LogoLoader';
 import { AccountScreen } from '../screens/AccountScreen';
 import { ActiveLockScreen } from '../screens/ActiveLockScreen';
 import { AppSelectionScreen } from '../screens/AppSelectionScreen';
@@ -78,7 +79,7 @@ export function AppNavigator() {
   if (!hydrated || userHydrating) {
     return (
       <View style={[styles.loading, { backgroundColor: colors.background }]}>
-        <ActivityIndicator color={colors.accent} />
+        <LogoLoader label="Starting Unbreakable Lock" />
       </View>
     );
   }

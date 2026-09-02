@@ -53,6 +53,21 @@ module.exports = () => ({
     },
     plugins: [
       'expo-dev-client',
+      [
+        // Without this Expo ships its own placeholder splash — a grid and
+        // concentric circles — which is what every build before this one used.
+        'expo-splash-screen',
+        {
+          image: './assets/splash-icon.png',
+          // The mark sits small and centred; a splash is a held breath, not a
+          // billboard.
+          imageWidth: 180,
+          resizeMode: 'contain',
+          // Matches the adaptive icon's plate, so the launcher icon appears to
+          // expand into the splash rather than cutting to a different colour.
+          backgroundColor: '#0D0F12',
+        },
+      ],
       // Native Google account picker. Needs no google-services.json: the OAuth
       // web client id is passed at runtime from the environment.
       '@react-native-google-signin/google-signin',

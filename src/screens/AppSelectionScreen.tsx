@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   FlatList,
   Platform,
@@ -13,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppRow } from '../components/AppRow';
 import { EmptyState } from '../components/EmptyState';
+import { LogoLoader } from '../components/LogoLoader';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { SearchBar } from '../components/SearchBar';
 import { StatusBadge } from '../components/StatusBadge';
@@ -283,7 +283,9 @@ export function AppSelectionScreen({ navigation }: ScreenProps<'AppSelection'>) 
         )}
         ListEmptyComponent={
           loadingApps ? (
-            <ActivityIndicator style={styles.loader} color={colors.accent} />
+            <View style={styles.loader}>
+              <LogoLoader size={44} label="Reading your apps" />
+            </View>
           ) : appsError ? (
             <EmptyState
               icon="⚠️"

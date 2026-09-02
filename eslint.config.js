@@ -10,6 +10,8 @@ module.exports = [
       '.expo/**',
       'dist/**',
       'coverage/**',
+      // Node build tooling, not app code: it runs under Node, not React Native.
+      'scripts/**',
     ],
   },
   {
