@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { hasLink } from '../src/constants/legal';
+import { ACCOUNT_DELETION_URL, hasLink, PRIVACY_POLICY_URL } from '../src/constants/legal';
 import { AuthService } from '../src/services/AuthService';
 import { ConsentService, stateFromInfo } from '../src/services/ConsentService';
 import { PurchaseService } from '../src/services/PurchaseService';
@@ -126,5 +126,56 @@ describe('account deletion (Play User Data policy)', () => {
     await expect(useAuthStore.getState().deleteAccount()).rejects.toMatchObject({
       code: 'AUTH_REAUTH_REQUIRED',
     });
+  });
+});
+
+describe('the privacy links are always reachable', () => {
+  it('always resolves a privacy policy URL', () => {
+    // The Account screen used to render a Privacy card with nothing in it,
+    // because the link was hidden whenever the env var was unset — and a build
+    // with no reachable policy is a Play listing rejection, not a warning.
+    expect(hasLink(PRIVACY_POLICY_URL)).toBe(true);
+    expect(PRIVACY_POLICY_URL).toMatch(/^https:\/\//);
+  });
+
+  it('always resolves an account deletion URL', () => {
+    expect(hasLink(ACCOUNT_DELETION_URL)).toBe(true);
+    expect(ACCOUNT_DELETION_URL).toMatch(/^https:\/\//);
+  });
+
+  it('points the two links at different pages', () => {
+    expect(PRIVACY_POLICY_URL).not.toBe(ACCOUNT_DELETION_URL);
+  });
+});
+
+describe('agreeing before an account is created', () => {
+  /** Mirrors the gate in AuthScreen: consent is asked once, and only for accounts. */
+  function needsConsent(method: 'google' | 'email' | 'guest', consentedAt: number) {
+    if (method === 'guest') return false;
+    return consentedAt === 0;
+  }
+
+  it('asks before a first sign-in', () => {
+    expect(needsConsent('google', 0)).toBe(true);
+    expect(needsConsent('email', 0)).toBe(true);
+  });
+
+  it('does not ask a guest', () => {
+    // A guest creates no account and hands over nothing, so there is nothing to
+    // agree to. A gate there would be consent theatre.
+    expect(needsConsent('guest', 0)).toBe(false);
+  });
+
+  it('asks once, not at every sign-in', () => {
+    expect(needsConsent('google', 1_700_000_000_000)).toBe(false);
+  });
+
+  it('records when the agreement was given', async () => {
+    await StorageService.set('accountConsentAt', 1_700_000_000_000);
+    expect(await StorageService.get<number>('accountConsentAt', 0)).toBe(1_700_000_000_000);
+  });
+
+  it('starts with no agreement recorded', async () => {
+    expect(await StorageService.get<number>('accountConsentAt', 0)).toBe(0);
   });
 });

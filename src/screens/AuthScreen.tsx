@@ -1,11 +1,13 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ConsentSheet } from '../components/ConsentSheet';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { radius, spacing, typography, useTheme } from '../constants/theme';
 import { useAuth } from '../hooks/useAuth';
 import type { ScreenProps } from '../navigation/types';
+import { StorageService } from '../services/StorageService';
 import { toLockError } from '../utils/errors';
 
 /**
@@ -19,6 +21,13 @@ import { toLockError } from '../utils/errors';
 export function AuthScreen({ navigation, route }: ScreenProps<'Auth'>) {
   const { colors } = useTheme();
   const [busy, setBusy] = useState(false);
+
+  // Null until the stored answer is read, so the sheet cannot flash for someone
+  // who agreed months ago.
+  const [consented, setConsented] = useState<boolean | null>(null);
+  const [askingConsent, setAskingConsent] = useState(false);
+  // What to run once they agree -- the method they actually tapped.
+  const pendingRef = useRef<(() => void) | null>(null);
 
   const {
     signInWithGoogle,
@@ -55,9 +64,50 @@ export function AuthScreen({ navigation, route }: ScreenProps<'Auth'>) {
   }, [finish, signInWithGoogle]);
 
   const handleGuest = useCallback(async () => {
+    // No account, nothing collected, nothing to agree to.
     await continueAsGuest();
     finish();
   }, [continueAsGuest, finish]);
+
+  useEffect(() => {
+    void StorageService.get<number>('accountConsentAt', 0).then((at) =>
+      setConsented(at > 0)
+    );
+  }, []);
+
+  /**
+   * Runs a sign-in method, asking for agreement first if it has not been given.
+   *
+   * The gate is here rather than inside each method so there is one place that
+   * decides an account may be created, and no path to an account that skips it.
+   */
+  const withConsent = useCallback(
+    (proceed: () => void) => {
+      if (consented) {
+        proceed();
+        return;
+      }
+      pendingRef.current = proceed;
+      setAskingConsent(true);
+    },
+    [consented]
+  );
+
+  const handleAgree = useCallback(() => {
+    setAskingConsent(false);
+    setConsented(true);
+    // Recorded so this is asked once, not at every sign-in.
+    void StorageService.set('accountConsentAt', Date.now());
+
+    const next = pendingRef.current;
+    pendingRef.current = null;
+    next?.();
+  }, []);
+
+  const handleDeclineConsent = useCallback(() => {
+    setAskingConsent(false);
+    pendingRef.current = null;
+  }, []);
 
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
@@ -90,7 +140,7 @@ export function AuthScreen({ navigation, route }: ScreenProps<'Auth'>) {
               label="Continue with Google"
               loading={busy}
               disabled={busy}
-              onPress={() => void handleGoogle()}
+              onPress={() => withConsent(() => void handleGoogle())}
             />
           ) : null}
 
@@ -108,7 +158,7 @@ export function AuthScreen({ navigation, route }: ScreenProps<'Auth'>) {
               label="Continue with email"
               variant="secondary"
               disabled={busy}
-              onPress={() => navigation.navigate('EmailAuth')}
+              onPress={() => withConsent(() => navigation.navigate('EmailAuth'))}
             />
           ) : null}
         </View>
@@ -123,6 +173,12 @@ export function AuthScreen({ navigation, route }: ScreenProps<'Auth'>) {
           onPress={() => void handleGuest()}
         />
       </View>
+
+      <ConsentSheet
+        visible={askingConsent}
+        onAgree={handleAgree}
+        onCancel={handleDeclineConsent}
+      />
     </SafeAreaView>
   );
 }

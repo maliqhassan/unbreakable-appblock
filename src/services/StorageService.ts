@@ -18,6 +18,8 @@ const KEYS = {
   permissionsSetupCompleted: 'ul.permissionsSetup',
   guestMode: 'ul.guestMode',
   simulatedLock: 'ul.simulated.lock',
+  /** When the user agreed to the data notice, before creating an account. */
+  accountConsentAt: 'ul.accountConsentAt',
 } as const;
 
 export type StorageKey = keyof typeof KEYS;
