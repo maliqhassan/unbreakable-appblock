@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": {
+    "modules": ["UnbreakableLockModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.unbreakablelock.UnbreakableLockModule"]
+  }
+}

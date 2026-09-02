@@ -1,0 +1,7 @@
+{
+  "name": "unbreakable-lock-native",
+  "version": "1.0.0",
+  "description": "Native OS-level app enforcement for Unbreakable Lock",
+  "main": "index.ts",
+  "private": true
+}

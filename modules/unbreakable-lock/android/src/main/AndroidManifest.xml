@@ -1,0 +1,74 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Read which app is in the foreground. User must grant this in Settings;
+         it is never auto-granted. -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+
+    <!-- Required so the enforcement service may show the block screen while the
+         user is in another app. Android 10+ blocks background activity starts
+         without it. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- Schedules need an exact alarm to start and end on the minute. The user
+         can revoke this on Android 14+; the engine falls back to an inexact
+         alarm, which Doze may delay by a few minutes. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
+    <!-- Lets us list launchable apps on Android 11+ (package visibility).
+         We only read the launcher-visible set; nothing hidden. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
+    <application>
+        <service
+            android:name=".LockForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Continuously enforces a user-initiated app lock session until its scheduled end time." />
+        </service>
+
+        <activity
+            android:name=".BlockActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:taskAffinity="expo.modules.unbreakablelock.block"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.Material.NoActionBar" />
+
+        <!-- One alarm for the next schedule transition, plus the system
+             broadcasts that invalidate it. Not exported: only AlarmManager and
+             the system send these. -->
+        <receiver
+            android:name=".ScheduleAlarmReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="expo.modules.unbreakablelock.SCHEDULE_TRANSITION" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

@@ -1,0 +1,26 @@
+apply plugin: 'com.android.library'
+apply plugin: 'org.jetbrains.kotlin.android'
+
+group = 'expo.modules.unbreakablelock'
+version = '1.0.0'
+
+def expoModulesCorePlugin = new File(
+  project(":expo-modules-core").projectDir.absolutePath,
+  "ExpoModulesCorePlugin.gradle"
+)
+apply from: expoModulesCorePlugin
+applyKotlinExpoModulesCorePlugin()
+useCoreDependencies()
+useDefaultAndroidSdkVersions()
+useExpoPublishing()
+
+android {
+  namespace "expo.modules.unbreakablelock"
+  defaultConfig {
+    versionCode 1
+    versionName "1.0.0"
+  }
+  lint {
+    abortOnError false
+  }
+}
