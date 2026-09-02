@@ -2,7 +2,7 @@ import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as Linking from 'expo-linking';
 import { useEffect } from 'react';
-import { StyleSheet, View, useColorScheme } from 'react-native';
+import { Pressable, StyleSheet, Text, View, useColorScheme } from 'react-native';
 
 import { AccountButton } from '../components/AccountButton';
 import { getColors } from '../constants/theme';
@@ -143,7 +143,7 @@ export function AppNavigator() {
         <Stack.Screen
           name="ActiveLock"
           component={ActiveLockScreen}
-          options={{
+          options={({ navigation }) => ({
             title: 'Lock Active',
             // Back is allowed: it navigates, it does not end anything. The lock
             // lives in the native service, so leaving this screen cannot stop
@@ -152,7 +152,14 @@ export function AppNavigator() {
             // stopLock(), not by hiding the chevron.
             headerBackVisible: true,
             gestureEnabled: true,
-          }}
+            // Reopening the app during a lock lands here as the *first* screen,
+            // so there is nothing beneath it and `headerBackVisible` has no
+            // back button to show. That left the screen with no way out at all.
+            // Give it an explicit way home in that case.
+            headerLeft: navigation.canGoBack()
+              ? undefined
+              : () => <HeaderHomeButton onPress={() => navigation.navigate('Home')} />,
+          })}
         />
         <Stack.Screen
           name="Permissions"
@@ -221,4 +228,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+});
+
+/**
+ * A back affordance for a screen that has nothing behind it.
+ *
+ * The native header hides its own chevron when the stack has a single entry,
+ * which is exactly the state ActiveLock is in after the app is reopened during
+ * a lock. This puts one back, pointed at Home.
+ */
+function HeaderHomeButton({ onPress }: { onPress: () => void }) {
+  return (
+    <Pressable
+      testID="active-lock-home"
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel="Back to home"
+      hitSlop={12}
+      style={({ pressed }) => [headerStyles.button, { opacity: pressed ? 0.6 : 1 }]}
+    >
+      <Text style={headerStyles.chevron}>‹</Text>
+    </Pressable>
+  );
+}
+
+const headerStyles = StyleSheet.create({
+  button: { paddingRight: 16, paddingVertical: 4 },
+  chevron: { fontSize: 30, lineHeight: 32, color: '#FFFFFF', fontWeight: '300' },
 });

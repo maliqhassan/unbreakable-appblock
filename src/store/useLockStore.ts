@@ -139,6 +139,22 @@ export const useLockStore = create<LockState>((set, get) => ({
       }
     }
 
+    // Anything still named after its own package id was blocked by a daily
+    // limit or a schedule rather than picked from the selection list, so no
+    // stored name exists for it. Ask the OS.
+    if (session) {
+      const unnamed = session.selectedApps.filter((app) => app.name === app.id);
+      if (unnamed.length > 0) {
+        const labels = await LockService.getAppLabels(unnamed.map((app) => app.id));
+        session = {
+          ...session,
+          selectedApps: session.selectedApps.map((app) =>
+            labels[app.id] ? { ...app, name: labels[app.id] } : app
+          ),
+        };
+      }
+    }
+
     set({
       capabilities,
       session,

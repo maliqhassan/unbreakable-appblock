@@ -99,6 +99,30 @@ export const LockService = {
    * Never throws for the Android enumeration failing: an OEM that blocks the
    * query yields an empty list, and the picker shows its empty state.
    */
+  /**
+   * Readable names for packages the app knows only by id.
+   *
+   * A daily limit or a schedule can block an app the user never picked from
+   * the manual selection list, so there is no stored name for it — and showing
+   * "com.linkedin.android" where "LinkedIn" belongs makes the app look broken.
+   *
+   * Failure is not an error here: the caller keeps the package name, which is
+   * ugly but true.
+   */
+  async getAppLabels(packages: string[]): Promise<Record<string, string>> {
+    if (packages.length === 0) return {};
+    try {
+      const api = engine() as unknown as {
+        getAppLabels?: (ids: string[]) => Promise<Record<string, string>>;
+      };
+      if (typeof api.getAppLabels !== 'function') return {};
+      return (await api.getAppLabels(packages)) ?? {};
+    } catch (err) {
+      log.warn('LockService', 'Could not read app labels', err);
+      return {};
+    }
+  },
+
   async getInstalledApps(): Promise<TargetApp[]> {
     try {
       const apps = await engine().getInstalledApps();

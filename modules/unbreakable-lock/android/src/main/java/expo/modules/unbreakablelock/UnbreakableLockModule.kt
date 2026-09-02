@@ -49,6 +49,33 @@ class UnbreakableLockModule : Module() {
 
         Function("getEnforcementCapabilities") { capabilitiesMap() }
 
+        /**
+         * Human-readable names for a handful of packages.
+         *
+         * Separate from `getInstalledApps` because that one base64-encodes an
+         * icon for every launchable app on the device — far too much work when
+         * all that is needed is a label for the two or three apps a lock
+         * happens to cover.
+         *
+         * Unknown or uninstalled packages are simply absent from the result;
+         * the caller keeps whatever it already had.
+         */
+        AsyncFunction("getAppLabels") { packages: List<String> ->
+            val manager = context.packageManager
+            val out = HashMap<String, String>(packages.size)
+            for (pkg in packages) {
+                try {
+                    val info = manager.getApplicationInfo(pkg, 0)
+                    out[pkg] = manager.getApplicationLabel(info).toString()
+                } catch (e: Exception) {
+                    // Not installed, or hidden by package visibility. Skipping
+                    // leaves the caller showing the package name, which is at
+                    // least true.
+                }
+            }
+            out
+        }
+
         AsyncFunction("getInstalledApps") {
             AppInventory.listLaunchableApps(context).map { entry ->
                 mapOf(
