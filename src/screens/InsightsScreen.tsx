@@ -2,24 +2,28 @@ import { useCallback, useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AppUsageGrid } from '../components/AppUsageGrid';
+import { CategoryLegend } from '../components/CategoryLegend';
 import { EmptyState } from '../components/EmptyState';
+import { HourlyChart } from '../components/HourlyChart';
 import { LogoLoader } from '../components/LogoLoader';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { SectionHeader } from '../components/SectionHeader';
 import { FadeIn } from '../components/motion';
-import { StatFigure } from '../components/StatFigure';
-import { TrendBars } from '../components/TrendBars';
 import { radius, spacing, typography, useTheme } from '../constants/theme';
 import type { ScreenProps } from '../navigation/types';
+import { LockService } from '../services/LockService';
 import { ScreenTimeService } from '../services/ScreenTimeService';
 import {
+  busiestHour,
   dailyAverage,
   EMPTY_REPORT,
   formatDuration,
+  formatHour,
+  splitDuration,
   totalForWindow,
   totalsByCategory,
   totalToday,
-  type CategoryTotal,
   type ScreenTimeReport,
 } from '../utils/screenTime';
 
@@ -31,29 +35,39 @@ import {
  * without ever showing them the evidence those decisions should rest on. A
  * limit of fifteen minutes means nothing until you know you spent two hours.
  *
+ * The shape is deliberately the one every phone owner already knows from their
+ * OS's own screen-time report: total, when it happened, what kind of thing it
+ * was, then which apps. Familiar beats novel for a screen whose whole job is to
+ * be read at a glance.
+ *
  * Everything here is read from Android on demand and never stored or sent
  * anywhere. There is no history beyond what the OS itself keeps.
  */
 export function InsightsScreen({ navigation }: ScreenProps<'Insights'>) {
   const { colors } = useTheme();
   const [report, setReport] = useState<ScreenTimeReport>(EMPTY_REPORT);
+  const [icons, setIcons] = useState<Record<string, string | null>>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
-  // A counter rather than a boolean: bumping it re-runs the effect, which keeps
-  // the fetch and its cancellation in one place instead of split across a
-  // callback the effect also calls.
   const [reloads, setReloads] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
 
     ScreenTimeService.getReport(7)
-      .then((next) => {
+      .then(async (next) => {
         if (cancelled) return;
         setReport(next);
         setLoading(false);
         setRefreshing(false);
+
+        // Icons come second and separately: they are the expensive part of the
+        // installed-app query, and the figures should not wait on them.
+        const installed = await LockService.getInstalledApps();
+        if (cancelled) return;
+        setIcons(
+          Object.fromEntries(installed.map((app) => [app.id, app.iconBase64 ?? null]))
+        );
       })
       .catch(() => {
         if (cancelled) return;
@@ -73,9 +87,7 @@ export function InsightsScreen({ navigation }: ScreenProps<'Insights'>) {
 
   const categories = totalsByCategory(report.apps);
   const today = totalToday(report);
-  const week = totalForWindow(report);
-  const average = dailyAverage(report);
-  const topApps = [...report.apps].sort((a, b) => b.seconds - a.seconds).slice(0, 8);
+  const peak = busiestHour(report.hourly);
 
   if (loading) {
     return (
@@ -94,7 +106,7 @@ export function InsightsScreen({ navigation }: ScreenProps<'Insights'>) {
           <EmptyState
             icon="📊"
             title="Usage access is off"
-            description="Android only shares screen time with your permission. Turn on Usage Access and this fills in."
+            description="Android only shares screen time with your permission. Turn it on and this fills in."
           />
         </View>
         <View style={styles.footer}>
@@ -114,12 +126,15 @@ export function InsightsScreen({ navigation }: ScreenProps<'Insights'>) {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.accent}
+          />
         }
       >
-        {/* One summary card, not three. Today, the week, the average and the
-            chart are one thought — splitting them across stacked cards made the
-            screen read as a settings list rather than as a report. */}
+        {/* The report card: today's total, when it happened, and what kind of
+            thing it was. One surface, because those are one thought. */}
         <FadeIn>
           <View
             style={[
@@ -127,69 +142,54 @@ export function InsightsScreen({ navigation }: ScreenProps<'Insights'>) {
               { backgroundColor: colors.surface, borderColor: colors.border },
             ]}
           >
-            <View style={styles.pair}>
-              <View style={styles.pairItem}>
-                <StatFigure label="Today" seconds={today} size="large" />
-              </View>
-              <View style={styles.pairItem}>
-                <StatFigure label="This week" seconds={week} size="large" />
-              </View>
+            <Text style={[styles.eyebrow, { color: colors.textFaint }]}>Today</Text>
+
+            <View style={styles.total}>
+              {splitDuration(today).map((part) => (
+                <View key={part.unit} style={styles.totalPart}>
+                  <Text style={[styles.totalValue, { color: colors.text }]}>
+                    {part.value}
+                  </Text>
+                  <Text style={[styles.totalUnit, { color: colors.textMuted }]}>
+                    {part.unit}
+                  </Text>
+                </View>
+              ))}
             </View>
 
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <HourlyChart hours={report.hourly} height={116} />
 
-            <View style={styles.pair}>
-              <View style={styles.pairItem}>
-                <StatFigure label="Daily average" seconds={average} />
-              </View>
-              <View style={styles.chart}>
-                <TrendBars days={report.days} dominant={categories[0]?.id} />
-              </View>
-            </View>
+            <View style={[styles.rule, { backgroundColor: colors.border }]} />
+
+            <CategoryLegend categories={categories} />
           </View>
         </FadeIn>
 
-        <SectionHeader
-          title="By category"
-          subtitle="Where today went, as each app describes itself."
-        />
+        {peak ? (
+          <Text style={[styles.insight, { color: colors.textMuted }]}>
+            Your busiest hour was {formatHour(peak.hour)} — {formatDuration(peak.total)}.
+          </Text>
+        ) : null}
 
-        {categories.length === 0 ? (
-          <Text style={[styles.muted, { color: colors.textMuted }]}>
-            Nothing to show yet today. Come back after you&apos;ve used your phone a
+        {report.apps.length > 0 ? (
+          <FadeIn index={1}>
+            <SectionHeader title="Apps" subtitle="Most used first." />
+            <AppUsageGrid apps={report.apps} icons={icons} />
+          </FadeIn>
+        ) : (
+          <Text style={[styles.insight, { color: colors.textMuted }]}>
+            Nothing recorded yet today. Come back after you&apos;ve used your phone a
             little.
           </Text>
-        ) : (
-          <>
-            <ShareBar categories={categories} />
-
-            {categories.map((category, index) => (
-              <FadeIn key={category.id} index={index}>
-                <Row
-                  color={category.color}
-                  title={category.label}
-                  subtitle={`${category.appCount} app${category.appCount === 1 ? '' : 's'}`}
-                  value={formatDuration(category.seconds)}
-                />
-              </FadeIn>
-            ))}
-          </>
         )}
 
-        {topApps.length > 0 ? (
-          <>
-            <SectionHeader title="Most used today" />
-            {topApps.map((app, index) => (
-              <FadeIn key={app.packageName} index={index}>
-                <Row
-                  color={totalsByCategory([app])[0].color}
-                  title={app.appName}
-                  value={formatDuration(app.seconds)}
-                />
-              </FadeIn>
-            ))}
-          </>
-        ) : null}
+        <FadeIn index={2}>
+          <SectionHeader title="This week" subtitle="How today compares." />
+          <View style={styles.weekRow}>
+            <Stat label="Week total" value={formatDuration(totalForWindow(report))} />
+            <Stat label="Daily average" value={formatDuration(dailyAverage(report))} />
+          </View>
+        </FadeIn>
 
         <Text style={[styles.note, { color: colors.textFaint }]}>
           Read from Android on this device. Categories come from what each app
@@ -209,88 +209,48 @@ export function InsightsScreen({ navigation }: ScreenProps<'Insights'>) {
   );
 }
 
-/** The day's split as one stacked bar — the shape of the day, before the list. */
-function ShareBar({ categories }: { categories: CategoryTotal[] }) {
+/** A labelled figure, for the pair under "This week". */
+function Stat({ label, value }: { label: string; value: string }) {
   const { colors } = useTheme();
   return (
-    <View style={[styles.shareTrack, { backgroundColor: colors.surfaceMuted }]}>
-      {categories.map((category) => (
-        <View
-          key={category.id}
-          style={{
-            flex: Math.max(category.share, 0.001),
-            backgroundColor: category.color,
-          }}
-        />
-      ))}
-    </View>
-  );
-}
-
-/** A list row: colour tab, name, and the figure on the right. */
-function Row({
-  color,
-  title,
-  subtitle,
-  value,
-}: {
-  color: string;
-  title: string;
-  subtitle?: string;
-  value: string;
-}) {
-  const { colors } = useTheme();
-  return (
-    <View style={[styles.row, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-      <View style={[styles.tab, { backgroundColor: color }]} />
-      <View style={styles.rowText}>
-        <Text style={[styles.rowTitle, { color: colors.text }]} numberOfLines={1}>
-          {title}
-        </Text>
-        {subtitle ? (
-          <Text style={[styles.rowSubtitle, { color: colors.textFaint }]}>{subtitle}</Text>
-        ) : null}
-      </View>
-      <Text style={[styles.rowValue, { color: colors.textMuted }]}>{value}</Text>
+    <View style={[styles.stat, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <Text style={[styles.statLabel, { color: colors.textMuted }]}>{label}</Text>
+      <Text style={[styles.statValue, { color: colors.text }]}>{value}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  content: { padding: spacing.gutter, gap: spacing.md, paddingBottom: spacing.xxl },
+  content: { padding: spacing.gutter, gap: spacing.lg, paddingBottom: spacing.xxl },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
+
   card: {
     borderWidth: 1,
     borderRadius: radius.lg,
     padding: spacing.xl,
     gap: spacing.lg,
   },
-  divider: { height: StyleSheet.hairlineWidth },
-  pair: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
-  pairItem: { flex: 1 },
-  chart: { flex: 1.2 },
-  shareTrack: {
-    flexDirection: 'row',
-    height: 12,
-    borderRadius: 6,
-    overflow: 'hidden',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
+  eyebrow: typography.eyebrow,
+  total: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, marginTop: -spacing.sm },
+  totalPart: { flexDirection: 'row', alignItems: 'flex-end' },
+  totalValue: { fontSize: 44, fontWeight: '800', letterSpacing: -1.5, lineHeight: 50 },
+  totalUnit: { fontSize: 20, fontWeight: '600', marginBottom: 6, marginLeft: 2 },
+  rule: { height: StyleSheet.hairlineWidth },
+
+  insight: { ...typography.body, fontSize: 15, lineHeight: 21 },
+
+  weekRow: { flexDirection: 'row', gap: spacing.md },
+  stat: {
+    flex: 1,
     borderWidth: 1,
     borderRadius: radius.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
+    padding: spacing.lg,
+    gap: spacing.xs,
   },
-  tab: { width: 4, height: 28, borderRadius: 2 },
-  rowText: { flex: 1, gap: 1 },
-  rowTitle: { ...typography.body, fontWeight: '600' },
-  rowSubtitle: { ...typography.caption, fontSize: 12 },
-  rowValue: { ...typography.body, fontWeight: '600' },
-  muted: { ...typography.body },
+  statLabel: { ...typography.caption, fontSize: 12 },
+  statValue: { ...typography.heading, fontSize: 20 },
+
   note: { ...typography.caption, lineHeight: 18, marginTop: spacing.sm },
-  footer: { padding: spacing.lg },
+  footer: { padding: spacing.gutter },
 });

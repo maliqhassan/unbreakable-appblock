@@ -5,7 +5,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AdBanner } from '../components/AdBanner';
 import { StatFigure } from '../components/StatFigure';
-import { TrendBars } from '../components/TrendBars';
+import { CategoryLegend } from '../components/CategoryLegend';
+import { HourlyChart } from '../components/HourlyChart';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { radius, spacing, typography, useTheme } from '../constants/theme';
 import { usePermissionStatus } from '../hooks/usePermissionStatus';
@@ -19,9 +20,7 @@ import { FREE_FEATURES, PRO_BENEFITS } from '../constants/limits';
 import { ScreenTimeService } from '../services/ScreenTimeService';
 import { formatUsageSummary } from '../utils/dailyUsage';
 import {
-  dailyAverage,
   EMPTY_REPORT,
-  formatDuration,
   totalsByCategory,
   totalToday,
   type ScreenTimeReport,
@@ -615,11 +614,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   limitBlock: { gap: spacing.xs, marginTop: spacing.xs },
-  trendRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, marginTop: spacing.xs },
-  trendFigures: { flex: 1, gap: spacing.md },
-  trendChart: { flex: 1.1 },
-  trendTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md },
-  trendDot: { width: 8, height: 8, borderRadius: 4 },
   homeTrack: {
     height: 6,
     borderRadius: 3,
@@ -729,7 +723,6 @@ function FocusTrendsCard() {
   if (!loaded) return null;
 
   const categories = totalsByCategory(report.apps);
-  const top = categories[0];
   // The chart needs day totals, not the per-app list. Gating it on `apps`
   // hid the whole card — and with it the only route to the Screen time
   // screen — whenever today happened to be quiet.
@@ -763,23 +756,14 @@ function FocusTrendsCard() {
         </Text>
       ) : (
         <>
-          <View style={styles.trendRow}>
-            <View style={styles.trendFigures}>
-              <StatFigure label="Today" seconds={totalToday(report)} size="large" />
-              <StatFigure label="Daily average" seconds={dailyAverage(report)} />
-            </View>
-            <View style={styles.trendChart}>
-              <TrendBars days={report.days} dominant={top?.id} height={56} />
-            </View>
-          </View>
+          <StatFigure label="Today" seconds={totalToday(report)} size="large" />
 
-          {top ? (
-            <View style={styles.trendTop}>
-              <View style={[styles.trendDot, { backgroundColor: top.color }]} />
-              <Text style={[styles.panelBody, { color: colors.textMuted }]}>
-                Mostly {top.label.toLowerCase()} — {formatDuration(top.seconds)} today
-              </Text>
-            </View>
+          {/* Axis labels are dropped here: on a summary card the shape of the
+              day is the message, and three extra label rows would crowd it. */}
+          <HourlyChart hours={report.hourly} height={54} showAxis={false} />
+
+          {categories.length > 0 ? (
+            <CategoryLegend categories={categories} limit={3} />
           ) : (
             <Text style={[styles.panelBody, { color: colors.textMuted }]}>
               {hasChart

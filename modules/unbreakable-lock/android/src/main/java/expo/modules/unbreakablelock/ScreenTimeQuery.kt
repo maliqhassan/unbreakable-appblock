@@ -37,6 +37,11 @@ object ScreenTimeQuery {
      */
     private const val MIN_REPORTABLE_SECONDS = 20L
 
+    private const val HOUR_MS = 60L * 60L * 1000L
+
+    /** Events from before midnight, so a session begun yesterday is visible. */
+    private const val LOOKBEHIND_MS = 6L * HOUR_MS
+
     /**
      * Foreground seconds per app, for a run of days ending today.
      *
@@ -96,7 +101,7 @@ object ScreenTimeQuery {
             ?: return emptyMap()
 
         val events = try {
-            manager.queryEvents(dayStart - 6 * 60 * 60 * 1000L, nowMs)
+            manager.queryEvents(dayStart - LOOKBEHIND_MS, nowMs)
         } catch (e: Exception) {
             Log.w(TAG, "queryEvents failed", e)
             return emptyMap()
@@ -172,6 +177,7 @@ object ScreenTimeQuery {
             root.put("available", false)
             root.put("days", JSONArray())
             root.put("apps", JSONArray())
+            root.put("hourly", JSONArray())
             return root.toString()
         }
 
@@ -180,6 +186,22 @@ object ScreenTimeQuery {
         val dayTotals = JSONArray()
         for (day in totals) dayTotals.put(day.values.sum())
         root.put("days", dayTotals)
+
+        // When today went, hour by hour. Only today: earlier days come from
+        // Android's daily rollups, which carry no timestamps to bucket by.
+        val hourly = JSONArray()
+        for (hour in hourlyCategoryTotals(context, startOfDay(nowMs, 0), nowMs)) {
+            val segments = JSONArray()
+            for ((category, seconds) in hour) {
+                if (seconds <= 0L) continue
+                segments.put(JSONObject().apply {
+                    put("category", category)
+                    put("seconds", seconds)
+                })
+            }
+            hourly.put(segments)
+        }
+        root.put("hourly", hourly)
 
         // Today is the last entry; the per-app list describes today.
         val today = totals.lastOrNull() ?: emptyMap()
@@ -213,6 +235,108 @@ object ScreenTimeQuery {
         root.put("apps", apps)
         return root.toString()
     }
+
+
+    /**
+     * Today, split into hourly buckets and attributed to categories.
+     *
+     * The daily figures answer "how much?"; this answers "when?", which is the
+     * question that actually changes behaviour — an hour of social media at
+     * 11pm is a different problem from an hour spread across lunch.
+     *
+     * Each foreground interval is split across the hour boundaries it crosses,
+     * so a session from 10:45 to 11:15 contributes fifteen minutes to each hour
+     * rather than thirty to whichever end we happened to pick.
+     *
+     * Hours later than now are genuinely zero rather than unknown: they have not
+     * happened yet. That is a different fact from "could not measure", which is
+     * carried by the report's `available` flag.
+     */
+    private fun hourlyCategoryTotals(
+        context: Context,
+        dayStart: Long,
+        nowMs: Long
+    ): Array<HashMap<String, Long>> {
+        val hours = Array(24) { HashMap<String, Long>() }
+
+        val manager = context.getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager
+            ?: return hours
+
+        val events = try {
+            manager.queryEvents(dayStart - LOOKBEHIND_MS, nowMs)
+        } catch (e: Exception) {
+            Log.w(TAG, "hourly queryEvents failed", e)
+            return hours
+        }
+
+        // One PackageManager lookup per package, not one per interval.
+        val categories = HashMap<String, String?>()
+        val packageManager = context.packageManager
+
+        fun categoryFor(pkg: String): String? = categories.getOrPut(pkg) {
+            try {
+                val info = packageManager.getApplicationInfo(pkg, 0)
+                // Same filter as the app list: a package with no launcher entry
+                // is a system service, not screen time.
+                if (packageManager.getLaunchIntentForPackage(pkg) == null) null
+                else categoryOf(info)
+            } catch (e: Exception) {
+                null
+            }
+        }
+
+        fun add(pkg: String, fromMs: Long, toMs: Long) {
+            if (pkg == context.packageName) return
+            val category = categoryFor(pkg) ?: return
+
+            var cursor = maxOf(fromMs, dayStart)
+            val end = minOf(toMs, nowMs)
+
+            while (cursor < end) {
+                val hour = hourOf(cursor, dayStart)
+                if (hour < 0 || hour > 23) break
+
+                val hourEnd = dayStart + (hour + 1) * HOUR_MS
+                val slice = minOf(end, hourEnd) - cursor
+                if (slice > 0) {
+                    hours[hour][category] = (hours[hour][category] ?: 0L) + slice
+                }
+                cursor = hourEnd
+            }
+        }
+
+        val openedAt = HashMap<String, Long>()
+        val event = android.app.usage.UsageEvents.Event()
+
+        while (events.hasNextEvent()) {
+            events.getNextEvent(event)
+            val pkg = event.packageName ?: continue
+
+            when {
+                isForeground(event) -> if (!openedAt.containsKey(pkg)) {
+                    openedAt[pkg] = event.timeStamp
+                }
+
+                isBackground(event) -> {
+                    val opened = openedAt.remove(pkg) ?: continue
+                    add(pkg, opened, event.timeStamp)
+                }
+            }
+        }
+
+        // Still open means still on screen, accruing up to this moment.
+        for ((pkg, opened) in openedAt) add(pkg, opened, nowMs)
+
+        // Milliseconds while accumulating, seconds on the way out.
+        for (hour in hours) {
+            for (key in hour.keys.toList()) hour[key] = (hour[key] ?: 0L) / 1000L
+        }
+        return hours
+    }
+
+    /** Which hour of the day a timestamp falls in, relative to local midnight. */
+    private fun hourOf(timestampMs: Long, dayStart: Long): Int =
+        ((timestampMs - dayStart) / HOUR_MS).toInt()
 
     /**
      * Android's own category, as a stable string.

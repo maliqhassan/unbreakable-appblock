@@ -21,6 +21,8 @@ export interface ScreenTimeReport {
   days: number[];
   /** Today's apps. */
   apps: AppUsage[];
+  /** Today, hour by hour. 24 entries, midnight first. */
+  hourly: HourBucket[];
 }
 
 export interface CategoryTotal {
@@ -33,7 +35,12 @@ export interface CategoryTotal {
   appCount: number;
 }
 
-export const EMPTY_REPORT: ScreenTimeReport = { available: false, days: [], apps: [] };
+export const EMPTY_REPORT: ScreenTimeReport = {
+  available: false,
+  days: [],
+  apps: [],
+  hourly: [],
+};
 
 /**
  * Groups today's apps into categories, largest first.
@@ -150,4 +157,95 @@ export function dayLabels(days: number, today: Date = new Date()): string[] {
     out.push(letters[date.getDay()]);
   }
   return out;
+}
+
+/** One category's slice of a single hour. */
+export interface HourSegment {
+  category: CategoryId;
+  seconds: number;
+}
+
+/** One hour of the day, and what filled it. */
+export interface HourBucket {
+  /** 0..23, local time. */
+  hour: number;
+  /** Largest first, so a stacked bar reads big-to-small from the base. */
+  segments: HourSegment[];
+  total: number;
+}
+
+/**
+ * Turns the raw hourly payload into buckets the chart can draw.
+ *
+ * Always returns 24 entries. An hour with nothing in it is a real answer —
+ * either you were not on your phone, or it has not happened yet — so it is a
+ * bucket with a zero total rather than a gap in the array.
+ */
+export function toHourBuckets(raw: RawHour[] | undefined): HourBucket[] {
+  return Array.from({ length: 24 }, (_, hour) => {
+    const segments = (raw?.[hour] ?? [])
+      .map((segment) => ({
+        category: categoryFor(segment.category).id,
+        seconds: Math.max(0, segment.seconds),
+      }))
+      .filter((segment) => segment.seconds > 0)
+      .sort((a, b) => b.seconds - a.seconds);
+
+    return {
+      hour,
+      segments,
+      total: segments.reduce((sum, segment) => sum + segment.seconds, 0),
+    };
+  });
+}
+
+type RawHour = { category: string; seconds: number }[];
+
+/**
+ * The y-axis ceiling, rounded up to a figure a person would choose.
+ *
+ * A chart scaled to the exact maximum puts the tallest bar flush against the
+ * top and gives the axis labels arbitrary values like "37m". Rounding up to the
+ * next familiar step keeps the gridlines meaningful and leaves the peak room to
+ * read as a peak.
+ */
+export function hourlyCeiling(buckets: HourBucket[]): number {
+  const peak = Math.max(0, ...buckets.map((bucket) => bucket.total));
+  if (peak <= 0) return 15 * 60;
+
+  const steps = [15, 30, 45, 60].map((m) => m * 60);
+  for (const step of steps) if (peak <= step) return step;
+
+  // Past an hour, round up to the next whole hour.
+  return Math.ceil(peak / 3600) * 3600;
+}
+
+/**
+ * The axis labels down the right of the chart: ceiling, half, zero.
+ *
+ * Three is the most a chart this small can carry without the labels becoming
+ * the loudest thing in it.
+ */
+export function hourlyAxis(ceiling: number): string[] {
+  return [formatDuration(ceiling), formatDuration(Math.round(ceiling / 2)), '0'];
+}
+
+/** Clock labels under the chart, at the quarter marks. */
+export const HOUR_AXIS_LABELS = ['12 AM', '6 AM', '12 PM', '6 PM'] as const;
+
+/** The hour with the most usage, for the "your peak was at…" line. */
+export function busiestHour(buckets: HourBucket[]): HourBucket | null {
+  let best: HourBucket | null = null;
+  for (const bucket of buckets) {
+    if (bucket.total > 0 && (best == null || bucket.total > best.total)) best = bucket;
+  }
+  return best;
+}
+
+/** "9 AM", "11 PM" — the same clock vocabulary as the axis. */
+export function formatHour(hour: number): string {
+  const normalised = ((hour % 24) + 24) % 24;
+  const suffix = normalised < 12 ? 'AM' : 'PM';
+  const twelve = normalised % 12 === 0 ? 12 : normalised % 12;
+  return `${twelve} ${suffix}`;
 }

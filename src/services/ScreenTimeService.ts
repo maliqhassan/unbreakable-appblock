@@ -1,5 +1,5 @@
 import UnbreakableLock from '../../modules/unbreakable-lock';
-import { EMPTY_REPORT, type ScreenTimeReport } from '../utils/screenTime';
+import { EMPTY_REPORT, toHourBuckets, type ScreenTimeReport } from '../utils/screenTime';
 import { log } from '../utils/logger';
 
 /**
@@ -43,6 +43,11 @@ export const ScreenTimeService = {
         available: parsed.available === true,
         days: Array.isArray(parsed.days) ? parsed.days : [],
         apps: Array.isArray(parsed.apps) ? parsed.apps : [],
+        // Always 24 buckets, whatever native sent — the chart should never have
+        // to reason about a short array.
+        hourly: toHourBuckets(
+          (parsed as unknown as { hourly?: { category: string; seconds: number }[][] }).hourly
+        ),
       };
     } catch (err) {
       log.warn('ScreenTime', 'Could not read the usage report', err);

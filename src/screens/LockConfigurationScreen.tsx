@@ -3,6 +3,7 @@ import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Chip } from '../components/Chip';
+import { DurationHero } from '../components/DurationHero';
 import { Stepper } from '../components/Stepper';
 import { Card } from '../components/Card';
 import { PrimaryButton } from '../components/PrimaryButton';
@@ -152,6 +153,13 @@ export function LockConfigurationScreen({ navigation }: ScreenProps<'LockConfigu
           Blocking {selectedApps.length} app{selectedApps.length === 1 ? '' : 's'}.
         </Text>
 
+        <DurationHero
+          testID="duration-hero"
+          label="Lock duration"
+          value={formatDuration(durationMinutes)}
+          caption={`Locked until ${formatClockTime(endTimestamp)}`}
+        />
+
         <Card title="Duration">
           <View style={styles.presets}>
             {/* The same chip as the daily-limit presets. Two screens that ask
@@ -171,7 +179,7 @@ export function LockConfigurationScreen({ navigation }: ScreenProps<'LockConfigu
             <Stepper
               testID="duration-stepper"
               value={formatDuration(durationMinutes)}
-              caption={`until ${formatClockTime(endTimestamp)}`}
+              caption="fine tune"
               stepLabel="5m"
               onDecrease={() => adjustCustom(-5)}
               onIncrease={() => adjustCustom(5)}

@@ -18,7 +18,7 @@ const app = (
 ): AppUsage => ({ packageName, appName: packageName, seconds, category });
 
 function report(over: Partial<ScreenTimeReport> = {}): ScreenTimeReport {
-  return { available: true, days: [], apps: [], ...over };
+  return { available: true, days: [], apps: [], hourly: [], ...over };
 }
 
 describe('categories', () => {

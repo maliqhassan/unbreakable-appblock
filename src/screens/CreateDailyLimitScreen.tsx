@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppSelector } from '../components/AppSelector';
 import { Chip } from '../components/Chip';
+import { DurationHero } from '../components/DurationHero';
 import { SectionHeader } from '../components/SectionHeader';
 import { Stepper } from '../components/Stepper';
 import { PrimaryButton } from '../components/PrimaryButton';
@@ -178,10 +179,21 @@ export function CreateDailyLimitScreen({
             subtitle="Measured from real time spent in the app."
           />
 
+          <DurationHero
+            testID="allowance-hero"
+            label="Every day"
+            value={formatLimit(seconds)}
+            caption={
+              appName
+                ? `${appName} locks itself once this is used up`
+                : 'The app locks itself once this is used up'
+            }
+          />
+
           <Stepper
             testID="limit-stepper"
-            value={`${formatLimit(seconds)}`}
-            caption="per day"
+            value={formatLimit(seconds)}
+            caption="fine tune"
             stepLabel="5m"
             onDecrease={() => adjust(-5)}
             onIncrease={() => adjust(5)}

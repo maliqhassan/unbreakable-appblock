@@ -8,7 +8,7 @@ import { useColorScheme, type ColorSchemeName } from 'react-native';
  * hand them. The light palette is kept in step so the app still behaves if the
  * theme is ever set back to `automatic` in app.config.js.
  *
- * The look: deep navy ground, one vivid accent, large tight-tracked headings,
+ * The look: deep navy ground, one calm teal accent, large tight-tracked headings,
  * generous whitespace, softly rounded cards. Colour is used sparingly and
  * always means something — accent for action, green for protected, amber for
  * attention, red for broken.
@@ -27,23 +27,37 @@ const palette = {
     // Lightened from #667085, which scored 2.92:1 on surfaceRaised -- below
     // even the large-text threshold, for text that is deliberately small.
     textFaint: '#8892A6',
-    /** The brand. Used for action, selection and progress — never as decoration. */
-    accent: '#6366F1',
-    accentSoft: 'rgba(99,102,241,0.14)',
+    /**
+     * The brand. Used for action, selection and progress — never as decoration.
+     *
+     * Teal rather than the original indigo. Two reasons beyond taste: a calm
+     * blue-green suits an app about putting the phone down better than a
+     * saturated purple, and the indigo scored 4.47:1 against the white label it
+     * carried — marginally under the readable threshold for a button, which is
+     * the one control that must never be hard to read.
+     */
+    accent: '#14B8A6',
+    accentSoft: 'rgba(20,184,166,0.14)',
     /** The pressed state of a filled accent surface. */
-    accentPressed: '#4F46E5',
-    /** Text ON an accent fill. */
-    accentText: '#FFFFFF',
+    accentPressed: '#0D9488',
+    /**
+     * Text ON an accent fill.
+     *
+     * Dark, not white: teal is a light tone, so it carries dark type the way
+     * Material's own light-primary schemes do. White on this scores 2.5:1;
+     * the page's own background scores 7.9:1.
+     */
+    accentText: '#0A0C12',
     /**
      * Accent-coloured TEXT on a dark surface.
      *
-     * The brand purple is a fill colour: as small text it scores 3.26:1 on
-     * surfaceRaised. Links and status labels use this lighter tone instead, so
-     * the identity is kept without failing contrast.
+     * The fill tone is tuned for a filled button, not for type. Links and status
+     * labels use this lighter tone instead, so the identity is kept without
+     * failing contrast.
      */
-    accentOnSurface: '#818CF8',
+    accentOnSurface: '#2DD4BF',
     /** A row or chip the user has chosen. Reads as selected without shouting. */
-    surfaceSelected: 'rgba(99,102,241,0.16)',
+    surfaceSelected: 'rgba(20,184,166,0.16)',
     danger: '#F87171',
     dangerSoft: 'rgba(248,113,113,0.12)',
     success: '#34D399',
@@ -62,13 +76,15 @@ const palette = {
     text: '#0A0C12',
     textMuted: '#525C6B',
     textFaint: '#5E6878',
-    accent: '#4F46E5',
-    accentSoft: 'rgba(79,70,229,0.10)',
-    accentPressed: '#4338CA',
+    // Darker than the dark theme's teal: on a white ground the fill has to
+    // carry white type, which needs the deeper tone (5.47:1).
+    accent: '#0F766E',
+    accentSoft: 'rgba(15,118,110,0.10)',
+    accentPressed: '#115E59',
     accentText: '#FFFFFF',
-    // Already 6.29:1 on white, so the fill colour doubles as the text colour.
-    accentOnSurface: '#4F46E5',
-    surfaceSelected: 'rgba(79,70,229,0.12)',
+    // 5.47:1 on white, so the fill colour doubles as the text colour here.
+    accentOnSurface: '#0F766E',
+    surfaceSelected: 'rgba(15,118,110,0.12)',
     danger: '#DC2626',
     dangerSoft: 'rgba(220,38,38,0.08)',
     success: '#059669',
