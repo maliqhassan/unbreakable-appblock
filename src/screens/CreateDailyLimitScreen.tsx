@@ -64,7 +64,10 @@ export function CreateDailyLimitScreen({
    * duplicating installed-app discovery. Editing keeps its own app fixed:
    * changing which app a limit belongs to is really a different limit.
    */
-  const packageName = existing?.appPackageName ?? selectedApps[0]?.id ?? '';
+  // The picker hands its answer back through route params, so choosing an app
+  // for a limit no longer disturbs whatever is selected for a manual lock.
+  const packageName =
+    route.params?.packageName ?? existing?.appPackageName ?? selectedApps[0]?.id ?? '';
   const appName = useMemo(() => {
     if (!packageName) return '';
     return availableApps.find((a) => a.id === packageName)?.name ?? packageName;
@@ -145,7 +148,12 @@ export function CreateDailyLimitScreen({
               testID="limit-choose-app"
               label={packageName ? 'Change app' : 'Choose app'}
               variant="secondary"
-              onPress={() => navigation.navigate('AppSelection')}
+              onPress={() =>
+                navigation.navigate('AppSelection', {
+                  purpose: 'dailyLimit',
+                  preselected: packageName ? [packageName] : [],
+                })
+              }
             />
           ) : null}
         </Card>

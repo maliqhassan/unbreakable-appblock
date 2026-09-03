@@ -8,7 +8,17 @@ export type RootStackParamList = {
   OnboardingComplete: undefined;
 
   Home: undefined;
-  AppSelection: undefined;
+  /**
+   * Doubles as the picker for daily limits and schedules.
+   *
+   * `purpose` decides what the footer does: start a lock, or hand the chosen
+   * packages back to the screen that asked. Without it the picker offered
+   * "Set Timer" to someone configuring a daily limit, and started a manual
+   * lock instead.
+   */
+  AppSelection:
+    | { purpose?: 'lock' | 'dailyLimit' | 'schedule'; preselected?: string[] }
+    | undefined;
   LockConfiguration: undefined;
   ActiveLock: undefined;
   Permissions: undefined;
@@ -16,12 +26,14 @@ export type RootStackParamList = {
   DailyLimits: undefined;
   Insights: undefined;
   /** Omit limitId to create; pass one to edit. */
-  CreateDailyLimit: { limitId?: string } | undefined;
+  CreateDailyLimit: { limitId?: string; packageName?: string } | undefined;
   /**
    * Omit both to start blank, scheduleId to edit an existing schedule, or
    * presetId to seed the form from a routine on the empty state.
    */
-  CreateSchedule: { scheduleId?: string; presetId?: string } | undefined;
+  CreateSchedule:
+    | { scheduleId?: string; presetId?: string; packageNames?: string[] }
+    | undefined;
 
   /** `origin` tells the screen whether to pop or reset when it finishes. */
   Auth: { origin?: 'onboarding' } | undefined;

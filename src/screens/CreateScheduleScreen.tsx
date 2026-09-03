@@ -42,8 +42,9 @@ const DEFAULT_DAYS: Weekday[] = ['monday', 'tuesday', 'wednesday', 'thursday', '
  * strict. The common case — "block social media on weeknights" — should take
  * about twenty seconds.
  *
- * App selection reuses the same selection the manual flow writes to, rather
- * than duplicating installed-app discovery.
+ * Apps are chosen through the shared picker, which hands its answer back as a
+ * route param. The schedule owns that answer: picking apps here does not
+ * change what a manual lock would block.
  */
 export function CreateScheduleScreen({ navigation, route }: ScreenProps<'CreateSchedule'>) {
   const { colors } = useTheme();
@@ -67,7 +68,28 @@ export function CreateScheduleScreen({ navigation, route }: ScreenProps<'CreateS
   );
 
   const selectedApps = useLockStore((s) => s.selectedApps);
-  const setSelectedApps = useLockStore((s) => s.setSelectedApps);
+  const availableApps = useLockStore((s) => s.availableApps);
+
+  /**
+   * The packages this schedule covers.
+   *
+   * Sourced from the picker's answer, then the schedule being edited, and only
+   * then the manual lock's selection as a starting point. The picker used to
+   * write straight into that manual selection, so setting up a schedule
+   * silently changed which apps a manual lock would block.
+   */
+  const chosenPackages = useMemo<string[]>(
+    () =>
+      route.params?.packageNames ??
+      existing?.appPackageNames ??
+      selectedApps.map((app) => app.id),
+    [existing?.appPackageNames, route.params?.packageNames, selectedApps]
+  );
+
+  const chosenNames = useMemo(
+    () => chosenPackages.map((id) => availableApps.find((a) => a.id === id)?.name ?? id),
+    [availableApps, chosenPackages]
+  );
 
   const [name, setName] = useState(existing?.name ?? preset?.name ?? 'Focus Schedule');
   const [days, setDays] = useState<Weekday[]>(
@@ -83,19 +105,6 @@ export function CreateScheduleScreen({ navigation, route }: ScreenProps<'CreateS
   const [picking, setPicking] = useState<'start' | 'end' | null>(null);
   const [saving, setSaving] = useState(false);
 
-  /**
-   * Seeds the shared app selection when editing.
-   *
-   * Reusing the manual flow's selection avoids a second installed-app picker,
-   * at the cost of this one-time sync.
-   */
-  useEffect(() => {
-    if (!existing) return;
-    setSelectedApps(
-      existing.appPackageNames.map((id) => ({ id, name: id }))
-    );
-  }, [existing, setSelectedApps]);
-
   // Defensive: the list screen gates creation, but a deep link or a lapsed
   // subscription could land someone here without Pro.
   useEffect(() => {
@@ -109,12 +118,12 @@ export function CreateScheduleScreen({ navigation, route }: ScreenProps<'CreateS
   const draft = useMemo(
     () => ({
       name,
-      appPackageNames: selectedApps.map((app) => app.id),
+      appPackageNames: chosenPackages,
       daysOfWeek: days,
       startTime,
       endTime,
     }),
-    [days, endTime, name, selectedApps, startTime]
+    [chosenPackages, days, endTime, name, startTime]
   );
 
   const validation = useMemo(() => validateSchedule(draft), [draft]);
@@ -136,7 +145,7 @@ export function CreateScheduleScreen({ navigation, route }: ScreenProps<'CreateS
   const overnight = isOvernight(preview);
   const durationMinutes = scheduleDurationMinutes(preview);
 
-  const tooManyApps = selectedApps.length > limits.maxApps;
+  const tooManyApps = chosenPackages.length > limits.maxApps;
 
   const handleSave = useCallback(async () => {
     if (!validation.valid) {
@@ -219,16 +228,21 @@ export function CreateScheduleScreen({ navigation, route }: ScreenProps<'CreateS
         <Card
           title="Apps"
           subtitle={
-            selectedApps.length === 0
+            chosenPackages.length === 0
               ? 'Choose which apps this schedule blocks.'
-              : `${selectedApps.length} app${selectedApps.length === 1 ? '' : 's'} selected.`
+              : chosenNames.join(', ')
           }
         >
           <PrimaryButton
             testID="schedule-apps"
-            label={selectedApps.length === 0 ? 'Choose apps' : 'Change apps'}
+            label={chosenPackages.length === 0 ? 'Choose apps' : 'Change apps'}
             variant="secondary"
-            onPress={() => navigation.navigate('AppSelection')}
+            onPress={() =>
+              navigation.navigate('AppSelection', {
+                purpose: 'schedule',
+                preselected: chosenPackages,
+              })
+            }
           />
           {tooManyApps ? (
             <Text style={[styles.warning, { color: colors.warning }]}>

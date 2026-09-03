@@ -31,9 +31,28 @@ import { toLockError } from '../utils/errors';
  * the same screen offers a button that opens Apple's own picker and then shows
  * a count of what was chosen. The difference is stated in the UI, not hidden.
  */
-export function AppSelectionScreen({ navigation }: ScreenProps<'AppSelection'>) {
+export function AppSelectionScreen({ navigation, route }: ScreenProps<'AppSelection'>) {
   const { colors } = useTheme();
   const [query, setQuery] = useState('');
+
+  /**
+   * Who opened this screen.
+   *
+   * 'lock' is the original job — pick apps, then set a timer. The other two are
+   * *pickers*: a daily limit or a schedule needs an app chosen, and the answer
+   * belongs to that screen, not to the manual lock. Before this, both reused
+   * the lock flow wholesale, so configuring a daily limit offered "Set Timer",
+   * dropped the user into the lock configuration screen, and quietly replaced
+   * whatever they had selected for a manual lock.
+   */
+  const purpose = route.params?.purpose ?? 'lock';
+  const picking = purpose !== 'lock';
+  /** A daily limit covers exactly one app. */
+  const singleChoice = purpose === 'dailyLimit';
+
+  // In picker mode the choice is local and handed back through route params,
+  // so it never touches the manual lock's selection.
+  const [picked, setPicked] = useState<string[]>(route.params?.preselected ?? []);
   const [pickerBusy, setPickerBusy] = useState(false);
   const [pickerError, setPickerError] = useState<string | null>(null);
 
@@ -86,11 +105,15 @@ export function AppSelectionScreen({ navigation }: ScreenProps<'AppSelection'>) 
   }, [availableApps, query]);
 
   const selectedIds = useMemo(
-    () => new Set(selectedApps.map((a) => a.id)),
-    [selectedApps]
+    () => new Set(picking ? picked : selectedApps.map((a) => a.id)),
+    [picked, picking, selectedApps]
   );
 
-  const atFreeLimit = selectedApps.length >= limits.maxApps;
+  // A daily limit is one app by definition, not by plan, so the paywall does
+  // not apply to that picker.
+  const atFreeLimit = singleChoice
+    ? false
+    : selectedIds.size >= limits.maxApps;
 
   const handleToggle = useCallback(
     (app: TargetApp) => {
@@ -101,6 +124,18 @@ export function AppSelectionScreen({ navigation }: ScreenProps<'AppSelection'>) 
         Alert.alert(
           `${app.name} is already locked`,
           'Apps cannot be removed while a lock is running. It unlocks when the timer ends.'
+        );
+        return;
+      }
+
+      if (picking) {
+        // Local only: the answer goes back to the screen that asked for it.
+        setPicked((current) =>
+          singleChoice
+            ? [app.id]
+            : current.includes(app.id)
+              ? current.filter((id) => id !== app.id)
+              : [...current, app.id]
         );
         return;
       }
@@ -124,10 +159,29 @@ export function AppSelectionScreen({ navigation }: ScreenProps<'AppSelection'>) 
       lockRunning,
       lockedIds,
       navigation,
+      picking,
       selectedIds,
+      singleChoice,
       toggleApp,
     ]
   );
+
+  /** Hands the choice back to the screen that opened the picker. */
+  const confirmPick = useCallback(() => {
+    if (purpose === 'dailyLimit') {
+      navigation.navigate({
+        name: 'CreateDailyLimit',
+        params: { packageName: picked[0] },
+        merge: true,
+      });
+      return;
+    }
+    navigation.navigate({
+      name: 'CreateSchedule',
+      params: { packageNames: picked },
+      merge: true,
+    });
+  }, [navigation, picked, purpose]);
 
   const openSystemPicker = useCallback(async () => {
     setPickerBusy(true);
@@ -313,21 +367,31 @@ export function AppSelectionScreen({ navigation }: ScreenProps<'AppSelection'>) 
       />
 
       <View style={[styles.footer, { borderColor: colors.border }]}>
-        <PrimaryButton
-          testID="set-timer"
-          label={lockRunning ? 'Add to running lock' : 'Set Timer'}
-          caption={
-            lockRunning && additions.length > 0
-              ? `${additions.length} new — your timer stays the same`
-              : undefined
-          }
-          size="large"
-          loading={adding}
-          disabled={selectedApps.length === 0}
-          onPress={() =>
-            lockRunning ? void handleAddToLock() : navigation.navigate('LockConfiguration')
-          }
-        />
+        {picking ? (
+          <PrimaryButton
+            testID="confirm-pick"
+            label={singleChoice ? 'Use this app' : 'Use these apps'}
+            size="large"
+            disabled={picked.length === 0}
+            onPress={confirmPick}
+          />
+        ) : (
+          <PrimaryButton
+            testID="set-timer"
+            label={lockRunning ? 'Add to running lock' : 'Set Timer'}
+            caption={
+              lockRunning && additions.length > 0
+                ? `${additions.length} new — your timer stays the same`
+                : undefined
+            }
+            size="large"
+            loading={adding}
+            disabled={selectedApps.length === 0}
+            onPress={() =>
+              lockRunning ? void handleAddToLock() : navigation.navigate('LockConfiguration')
+            }
+          />
+        )}
       </View>
     </SafeAreaView>
   );
