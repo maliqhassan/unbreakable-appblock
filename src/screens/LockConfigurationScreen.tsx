@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Chip } from '../components/Chip';
+import { Stepper } from '../components/Stepper';
 import { Card } from '../components/Card';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { RequirementsCard } from '../components/RequirementsCard';
@@ -152,64 +154,32 @@ export function LockConfigurationScreen({ navigation }: ScreenProps<'LockConfigu
 
         <Card title="Duration">
           <View style={styles.presets}>
-            {DURATION_PRESETS.map((preset) => {
-              const active = durationMinutes === preset.minutes;
-              return (
-                <Pressable
-                  key={preset.minutes}
-                  testID={`duration-${preset.minutes}`}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: active }}
-                  accessibilityLabel={preset.label}
-                  onPress={() => handlePreset(preset.minutes)}
-                  style={[
-                    styles.preset,
-                    {
-                      borderColor: active ? colors.accent : colors.border,
-                      backgroundColor: active ? colors.surfaceMuted : colors.surface,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.presetLabel,
-                      { color: active ? colors.accent : colors.text },
-                    ]}
-                  >
-                    {preset.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
+            {/* The same chip as the daily-limit presets. Two screens that ask
+                the same question should not answer it with two designs. */}
+            {DURATION_PRESETS.map((preset) => (
+              <Chip
+                key={preset.minutes}
+                testID={`duration-${preset.minutes}`}
+                label={preset.label}
+                selected={durationMinutes === preset.minutes}
+                onPress={() => handlePreset(preset.minutes)}
+              />
+            ))}
           </View>
 
           <View style={styles.customRow}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Decrease duration by 5 minutes"
-              onPress={() => adjustCustom(-5)}
-              style={[styles.stepper, { borderColor: colors.border }]}
-            >
-              <Text style={[styles.stepperLabel, { color: colors.text }]}>−5m</Text>
-            </Pressable>
-
-            <Text style={[styles.customValue, { color: colors.text }]}>
-              {formatDuration(durationMinutes)}
-            </Text>
-
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Increase duration by 5 minutes"
-              onPress={() => adjustCustom(5)}
-              style={[styles.stepper, { borderColor: colors.border }]}
-            >
-              <Text style={[styles.stepperLabel, { color: colors.text }]}>+5m</Text>
-            </Pressable>
+            <Stepper
+              testID="duration-stepper"
+              value={formatDuration(durationMinutes)}
+              caption={`until ${formatClockTime(endTimestamp)}`}
+              stepLabel="5m"
+              onDecrease={() => adjustCustom(-5)}
+              onIncrease={() => adjustCustom(5)}
+              canDecrease={durationMinutes > MIN_DURATION_MINUTES}
+              canIncrease={durationMinutes < MAX_DURATION_MINUTES}
+            />
           </View>
 
-          <Text style={[styles.until, { color: colors.textMuted }]}>
-            Lock until {formatClockTime(endTimestamp)}
-          </Text>
         </Card>
 
         <Card>

@@ -25,9 +25,14 @@ const palette = {
     text: '#F5F7FA',
     textMuted: '#98A2B3',
     textFaint: '#667085',
+    /** The brand. Used for action, selection and progress — never as decoration. */
     accent: '#6366F1',
     accentSoft: 'rgba(99,102,241,0.14)',
+    /** The pressed state of a filled accent surface. */
+    accentPressed: '#4F46E5',
     accentText: '#FFFFFF',
+    /** A row or chip the user has chosen. Reads as selected without shouting. */
+    surfaceSelected: 'rgba(99,102,241,0.16)',
     danger: '#F87171',
     dangerSoft: 'rgba(248,113,113,0.12)',
     success: '#34D399',
@@ -48,7 +53,9 @@ const palette = {
     textFaint: '#8A94A6',
     accent: '#4F46E5',
     accentSoft: 'rgba(79,70,229,0.10)',
+    accentPressed: '#4338CA',
     accentText: '#FFFFFF',
+    surfaceSelected: 'rgba(79,70,229,0.12)',
     danger: '#DC2626',
     dangerSoft: 'rgba(220,38,38,0.08)',
     success: '#059669',
@@ -122,6 +129,29 @@ export const elevation = {
   },
 } as const;
 
+/**
+ * Motion.
+ *
+ * Short enough that nothing waits on an animation. A micro-interaction the user
+ * has to sit through is worse than no animation at all, so these are chosen to
+ * confirm an action rather than to perform one.
+ *
+ * Every one of these is skipped when the system reports reduce-motion — see
+ * `useReducedMotion` in `src/components/motion.tsx`.
+ */
+export const motion = {
+  /** Press feedback, toggles, chips. Fast enough to feel like the touch itself. */
+  fast: 140,
+  /** Status changes, expanding sections, progress. */
+  base: 220,
+  /** Screen entrances and anything crossing a large distance. */
+  slow: 320,
+  /** How far a press sinks. Small: a button should flex, not shrink. */
+  pressScale: 0.97,
+  /** How far entering content travels upward. */
+  enterOffset: 12,
+} as const;
+
 /** Minimum comfortable tap target. */
 export const HIT_SIZE = 48;
 
@@ -139,5 +169,6 @@ export function useTheme() {
     radius,
     typography,
     elevation,
+    motion,
   };
 }

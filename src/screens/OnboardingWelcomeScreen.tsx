@@ -1,5 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { Logo } from '../components/Logo';
+import { FadeIn } from '../components/motion';
 import { OnboardingLayout } from '../components/OnboardingLayout';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { spacing, typography, useTheme } from '../constants/theme';
@@ -40,15 +42,27 @@ export function OnboardingWelcomeScreen({ navigation }: ScreenProps<'OnboardingW
       }
     >
       <View style={styles.hero}>
-        <View style={[styles.badge, { backgroundColor: colors.accentSoft, borderColor: colors.accent }]}>
-          <Text style={styles.badgeIcon}>🔒</Text>
-        </View>
+        <FadeIn>
+          {/* The product mark rather than a stock padlock: the same interlocking
+              rings as the launcher icon, so the first screen and the home
+              screen icon are recognisably one thing. */}
+          <View
+            style={[
+              styles.badge,
+              { backgroundColor: colors.accentSoft, borderColor: colors.accent },
+            ]}
+          >
+            <Logo size={56} color={colors.accent} />
+          </View>
+        </FadeIn>
 
-        <Text style={[styles.title, { color: colors.text }]}>Take back your time.</Text>
-
-        <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-          Lock distracting apps for the time you choose and stay focused.
-        </Text>
+        <FadeIn index={1} stagger={90}>
+          <Text style={[styles.brand, { color: colors.textFaint }]}>UNBREAKABLE LOCK</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Take back your time.</Text>
+          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+            Block distracting apps. Set limits. Stay focused.
+          </Text>
+        </FadeIn>
       </View>
     </OnboardingLayout>
   );
@@ -69,8 +83,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeIcon: {
-    fontSize: 46,
+  brand: {
+    ...typography.eyebrow,
+    textAlign: 'center',
+    marginBottom: spacing.sm,
   },
   title: {
     ...typography.hero,

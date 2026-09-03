@@ -3,6 +3,8 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { OnboardingLayout } from '../components/OnboardingLayout';
 import { PermissionExplainer } from '../components/PermissionExplainer';
+import { SetupProgress } from '../components/SetupProgress';
+import { FadeIn } from '../components/motion';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { radius, spacing, typography, useTheme } from '../constants/theme';
 import { usePermissionStatus } from '../hooks/usePermissionStatus';
@@ -60,35 +62,34 @@ export function OnboardingPermissionsScreen({
         footer={
           <PrimaryButton
             testID="onboarding-permissions-continue"
-            label="Continue"
+            label={ready ? 'Continue' : 'Continue anyway'}
             caption={
               ready
                 ? undefined
-                : `${missing.length} still needed — you can finish this later`
+                : `${missing.length} still needed — no lock can start yet`
             }
             onPress={() => void finish()}
           />
         }
       >
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>
-            Set up your protection
-          </Text>
+          <Text style={[styles.title, { color: colors.text }]}>Protect your focus</Text>
           <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-            Allow the permissions below so Unbreakable Lock can enforce your focus
-            sessions.
+            Give Unbreakable Lock the permissions it needs to enforce your focus
+            sessions. You can change these any time.
           </Text>
         </View>
 
-        <ProgressSummary granted={granted} total={total} ready={ready} />
+        <SetupProgress completed={granted} total={total} />
 
         <View style={styles.rows}>
-          {permissions.map((permission) => (
-            <PermissionCard
-              key={permission.id}
-              permission={permission}
-              onPress={() => setExplaining(permission)}
-            />
+          {permissions.map((permission, index) => (
+            <FadeIn key={permission.id} index={index}>
+              <PermissionCard
+                permission={permission}
+                onPress={() => setExplaining(permission)}
+              />
+            </FadeIn>
           ))}
         </View>
       </OnboardingLayout>
@@ -99,60 +100,6 @@ export function OnboardingPermissionsScreen({
         onCancel={() => setExplaining(null)}
       />
     </>
-  );
-}
-
-/**
- * Progress, derived rather than hardcoded.
- *
- * The count comes from the live permission list, so adding or removing a
- * required permission changes this automatically instead of leaving a stale
- * "of 3" behind.
- */
-function ProgressSummary({
-  granted,
-  total,
-  ready,
-}: {
-  granted: number;
-  total: number;
-  ready: boolean;
-}) {
-  const { colors } = useTheme();
-  const fraction = total === 0 ? 1 : granted / total;
-
-  return (
-    <View
-      accessibilityRole="progressbar"
-      accessibilityLabel={
-        ready ? 'Protection is ready' : `${granted} of ${total} permissions complete`
-      }
-      style={[
-        styles.progress,
-        {
-          backgroundColor: colors.surface,
-          borderColor: ready ? colors.success : colors.border,
-        },
-      ]}
-    >
-      <Text
-        style={[styles.progressLabel, { color: ready ? colors.success : colors.text }]}
-      >
-        {ready ? '✓ Protection is ready' : `${granted} of ${total} complete`}
-      </Text>
-
-      <View style={[styles.track, { backgroundColor: colors.surfaceMuted }]}>
-        <View
-          style={[
-            styles.fill,
-            {
-              backgroundColor: ready ? colors.success : colors.accent,
-              width: `${Math.round(fraction * 100)}%`,
-            },
-          ]}
-        />
-      </View>
-    </View>
   );
 }
 
@@ -180,8 +127,8 @@ function PermissionCard({
       style={[
         styles.card,
         {
-          backgroundColor: colors.surface,
-          borderColor: granted ? colors.success : colors.border,
+          backgroundColor: granted ? colors.successSoft : colors.surface,
+          borderColor: granted ? 'transparent' : colors.border,
         },
       ]}
     >
@@ -214,7 +161,7 @@ function PermissionCard({
                   ? colors.textFaint
                   : permission.optional
                     ? colors.textMuted
-                    : colors.danger,
+                    : colors.accent,
             },
           ]}
         >

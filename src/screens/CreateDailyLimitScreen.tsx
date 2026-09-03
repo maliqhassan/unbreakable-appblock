@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Card } from '../components/Card';
+import { AppSelector } from '../components/AppSelector';
+import { Chip } from '../components/Chip';
+import { SectionHeader } from '../components/SectionHeader';
+import { Stepper } from '../components/Stepper';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { Toggle } from '../components/Toggle';
 import { radius, spacing, typography, useTheme } from '../constants/theme';
@@ -68,10 +71,12 @@ export function CreateDailyLimitScreen({
   // for a limit no longer disturbs whatever is selected for a manual lock.
   const packageName =
     route.params?.packageName ?? existing?.appPackageName ?? selectedApps[0]?.id ?? '';
-  const appName = useMemo(() => {
-    if (!packageName) return '';
-    return availableApps.find((a) => a.id === packageName)?.name ?? packageName;
-  }, [availableApps, packageName]);
+  const chosenApp = useMemo(
+    () => availableApps.find((a) => a.id === packageName) ?? null,
+    [availableApps, packageName]
+  );
+  const appName = packageName ? (chosenApp?.name ?? packageName) : '';
+  const appIcon = chosenApp?.iconBase64 ?? null;
 
   const usageAccess = permissions.find((p) => p.id === 'usageAccess');
   const usageAccessMissing = usageAccess != null && usageAccess.status !== 'granted';
@@ -129,25 +134,34 @@ export function CreateDailyLimitScreen({
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Card
-          title="App"
-          subtitle={
-            existing
-              ? 'The app a limit belongs to cannot be changed. Delete it and make a new one instead.'
-              : packageName
-                ? undefined
-                : 'Choose which app this daily limit applies to.'
-          }
-        >
-          {packageName ? (
-            <Text style={[styles.appName, { color: colors.text }]}>{appName}</Text>
-          ) : null}
+        <View style={styles.section}>
+          <SectionHeader
+            title="App"
+            subtitle={
+              existing
+                ? 'The app a limit belongs to cannot be changed — delete it and make a new one.'
+                : undefined
+            }
+          />
 
-          {!existing ? (
-            <PrimaryButton
+          {existing ? (
+            // Locked: show the app as a plain row rather than a control that
+            // looks tappable and then refuses.
+            <View
+              style={[
+                styles.lockedApp,
+                { backgroundColor: colors.surfaceMuted, borderColor: colors.border },
+              ]}
+            >
+              <Text style={[styles.lockedAppName, { color: colors.text }]} numberOfLines={1}>
+                {appName}
+              </Text>
+            </View>
+          ) : (
+            <AppSelector
               testID="limit-choose-app"
-              label={packageName ? 'Change app' : 'Choose app'}
-              variant="secondary"
+              appName={packageName ? appName : null}
+              iconBase64={appIcon}
               onPress={() =>
                 navigation.navigate('AppSelection', {
                   purpose: 'dailyLimit',
@@ -155,68 +169,40 @@ export function CreateDailyLimitScreen({
                 })
               }
             />
-          ) : null}
-        </Card>
+          )}
+        </View>
 
-        <Card title="Daily allowance" subtitle="Measured from real time spent in the app.">
+        <View style={styles.section}>
+          <SectionHeader
+            title="Daily allowance"
+            subtitle="Measured from real time spent in the app."
+          />
+
+          <Stepper
+            testID="limit-stepper"
+            value={`${formatLimit(seconds)}`}
+            caption="per day"
+            stepLabel="5m"
+            onDecrease={() => adjust(-5)}
+            onIncrease={() => adjust(5)}
+            canDecrease={seconds > MIN_LIMIT_SECONDS}
+            canIncrease={seconds < MAX_LIMIT_SECONDS}
+          />
+
           <View style={styles.presets}>
-            {LIMIT_PRESETS_SECONDS.map((preset) => {
-              const active = seconds === preset;
-              return (
-                <Pressable
-                  key={preset}
-                  testID={`limit-preset-${preset}`}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: active }}
-                  accessibilityLabel={formatLimit(preset)}
-                  onPress={() => setSeconds(preset)}
-                  style={[
-                    styles.preset,
-                    {
-                      backgroundColor: active ? colors.accentSoft : colors.surfaceMuted,
-                      borderColor: active ? colors.accent : 'transparent',
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.presetLabel,
-                      { color: active ? colors.accent : colors.text },
-                    ]}
-                  >
-                    {formatLimit(preset)}
-                  </Text>
-                </Pressable>
-              );
-            })}
+            {LIMIT_PRESETS_SECONDS.map((preset) => (
+              <Chip
+                key={preset}
+                testID={`limit-preset-${preset}`}
+                label={formatLimit(preset)}
+                selected={seconds === preset}
+                onPress={() => setSeconds(preset)}
+              />
+            ))}
           </View>
+        </View>
 
-          <View style={styles.stepperRow}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Decrease by 5 minutes"
-              onPress={() => adjust(-5)}
-              style={[styles.stepper, { borderColor: colors.border }]}
-            >
-              <Text style={[styles.stepperLabel, { color: colors.text }]}>−5m</Text>
-            </Pressable>
-
-            <Text style={[styles.current, { color: colors.text }]}>
-              {formatLimit(seconds)}/day
-            </Text>
-
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Increase by 5 minutes"
-              onPress={() => adjust(5)}
-              style={[styles.stepper, { borderColor: colors.border }]}
-            >
-              <Text style={[styles.stepperLabel, { color: colors.text }]}>+5m</Text>
-            </Pressable>
-          </View>
-        </Card>
-
-        <Card>
+        <View style={styles.section}>
           <Toggle
             testID="limit-strict"
             label="Strict Mode"
@@ -230,7 +216,7 @@ export function CreateDailyLimitScreen({
               })
             }
           />
-        </Card>
+        </View>
 
         {usageAccessMissing ? (
           <Text style={[styles.warning, { color: colors.danger }]}>
@@ -267,44 +253,21 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: spacing.gutter,
     paddingVertical: spacing.lg,
-    gap: spacing.lg,
+    // Sections carry their own internal spacing, so the gap between them is
+    // what separates ideas rather than a border around each one.
+    gap: spacing.xl,
   },
-  appName: {
-    ...typography.heading,
-    marginBottom: spacing.md,
+  section: { gap: spacing.md },
+  lockedApp: {
+    borderWidth: 1,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
   },
+  lockedAppName: { ...typography.body, fontWeight: '700' },
   presets: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
-  },
-  preset: {
-    borderWidth: 1,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.lg,
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  presetLabel: typography.label,
-  stepperRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: spacing.lg,
-  },
-  stepper: {
-    borderWidth: 1,
-    borderRadius: radius.sm,
-    minHeight: 44,
-    minWidth: 72,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepperLabel: typography.label,
-  current: {
-    ...typography.heading,
-    fontSize: 20,
   },
   warning: {
     ...typography.caption,

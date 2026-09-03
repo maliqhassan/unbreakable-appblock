@@ -1,6 +1,6 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { radius, spacing, typography, useTheme } from '../constants/theme';
+import { motion, radius, spacing, typography, useTheme } from '../constants/theme';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type Size = 'regular' | 'large';
@@ -44,6 +44,15 @@ export function PrimaryButton({
     danger: colors.danger,
   }[variant];
 
+  // A filled button darkens on press; a quiet one lifts instead, since there is
+  // no fill to darken.
+  const pressedBackground = {
+    primary: colors.accentPressed,
+    secondary: colors.surfaceRaised,
+    ghost: colors.surfaceMuted,
+    danger: colors.accentPressed,
+  }[variant];
+
   const foreground = {
     primary: colors.accentText,
     secondary: colors.text,
@@ -65,12 +74,14 @@ export function PrimaryButton({
         styles.base,
         size === 'large' ? styles.large : styles.regular,
         {
-          backgroundColor: background,
+          backgroundColor: pressed && !inactive ? pressedBackground : background,
           borderColor,
-          opacity: inactive ? 0.4 : 1,
-          // A subtle press-in rather than a fade: it feels physical without
-          // needing an animation library.
-          transform: [{ scale: pressed ? 0.985 : 1 }],
+          // Disabled stays legible: 0.4 made the label unreadable, which turned
+          // 'not yet' into 'broken'.
+          opacity: inactive ? 0.55 : 1,
+          // Slight, and paired with the colour change above. A button that
+          // visibly shrinks reads as a gimmick.
+          transform: [{ scale: pressed && !inactive ? motion.pressScale : 1 }],
         },
       ]}
     >

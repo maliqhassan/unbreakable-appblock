@@ -3,6 +3,8 @@ import { Alert, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ConsentSheet } from '../components/ConsentSheet';
+import { Logo } from '../components/Logo';
+import { FadeIn } from '../components/motion';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { radius, spacing, typography, useTheme } from '../constants/theme';
 import { useAuth } from '../hooks/useAuth';
@@ -112,18 +114,16 @@ export function AuthScreen({ navigation, route }: ScreenProps<'Auth'>) {
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
       <View style={styles.content}>
-        <View style={styles.header}>
-          <View style={[styles.badge, { backgroundColor: colors.surfaceMuted }]}>
-            <Text style={styles.badgeIcon}>🔒</Text>
+        <FadeIn style={styles.header}>
+          <View style={[styles.badge, { backgroundColor: colors.accentSoft }]}>
+            <Logo size={40} color={colors.accent} />
           </View>
-          <Text style={[styles.title, { color: colors.text }]}>
-            Save your progress
-          </Text>
+          <Text style={[styles.title, { color: colors.text }]}>Save your progress</Text>
           <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-            An account keeps your Pro subscription with you if you change phone. Everything
-            else works fine without one.
+            Sign in to keep your Pro subscription with you when you switch phones.
+            Everything else works without an account.
           </Text>
-        </View>
+        </FadeIn>
 
         {!isAvailable ? (
           <View style={[styles.notice, { borderColor: colors.warning }]}>
@@ -172,6 +172,9 @@ export function AuthScreen({ navigation, route }: ScreenProps<'Auth'>) {
           disabled={busy}
           onPress={() => void handleGuest()}
         />
+        <Text style={[styles.guestNote, { color: colors.textFaint }]}>
+          No account needed. You can sign in later from Account.
+        </Text>
       </View>
 
       <ConsentSheet
@@ -202,7 +205,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeIcon: { fontSize: 34 },
+  guestNote: {
+    ...typography.caption,
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: spacing.xs,
+  },
   title: {
     ...typography.title,
     textAlign: 'center',
