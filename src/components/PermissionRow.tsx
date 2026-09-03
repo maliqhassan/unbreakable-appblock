@@ -97,7 +97,11 @@ export function PermissionRow({ permission, onEnable }: Props) {
           onPress={() => onEnable(permission)}
           style={[styles.button, { backgroundColor: colors.accent }]}
         >
-          <Text style={[styles.buttonLabel, { color: colors.accentText }]}>Enable</Text>
+          <Text style={[styles.buttonLabel, { color: colors.accentText }]}>
+            {/* "Enable" would promise a result we cannot confirm for a setting
+                Android will not let us read. */}
+            {unknown ? 'Open settings' : 'Enable'}
+          </Text>
         </PressableScale>
       ) : null}
     </View>

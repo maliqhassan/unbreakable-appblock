@@ -1,7 +1,8 @@
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { PermissionRow } from '../components/PermissionRow';
 import { PermissionExplainer } from '../components/PermissionExplainer';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { radius, spacing, typography, useTheme } from '../constants/theme';
@@ -81,10 +82,10 @@ export function PermissionsScreen({ navigation }: ScreenProps<'Permissions'>) {
           ) : null}
 
           {permissions.map((permission) => (
-            <PermissionCard
+            <PermissionRow
               key={permission.id}
               permission={permission}
-              onPress={() => setExplaining(permission)}
+              onEnable={() => setExplaining(permission)}
             />
           ))}
 
@@ -117,87 +118,6 @@ export function PermissionsScreen({ navigation }: ScreenProps<'Permissions'>) {
         onCancel={() => setExplaining(null)}
       />
     </>
-  );
-}
-
-function PermissionCard({
-  permission,
-  onPress,
-}: {
-  permission: PermissionState;
-  onPress: () => void;
-}) {
-  const { colors } = useTheme();
-  const granted = permission.status === 'granted';
-  const unavailable = permission.status === 'unavailable';
-
-  const statusLabel = granted
-    ? '✓ Enabled'
-    : unavailable
-      ? 'Not applicable'
-      : permission.optional
-        ? 'Optional'
-        : 'Required';
-
-  return (
-    <View
-      style={[
-        styles.card,
-        {
-          backgroundColor: colors.surface,
-          borderColor: granted ? colors.success : colors.border,
-        },
-      ]}
-    >
-      <View style={styles.cardTop}>
-        <View style={[styles.iconWrap, { backgroundColor: colors.surfaceMuted }]}>
-          <Text style={styles.icon}>{permission.icon}</Text>
-        </View>
-        <View style={styles.cardText}>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>
-            {permission.title}
-          </Text>
-          <Text style={[styles.cardBody, { color: colors.textMuted }]}>
-            {permission.rationale}
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.cardBottom}>
-        <Text
-          accessibilityLabel={`${permission.title}: ${statusLabel}`}
-          style={[
-            styles.status,
-            {
-              color: granted
-                ? colors.success
-                : unavailable
-                  ? colors.textFaint
-                  : permission.optional
-                    ? colors.textMuted
-                    : colors.danger,
-            },
-          ]}
-        >
-          {statusLabel}
-        </Text>
-
-        {!granted && !unavailable ? (
-          <Pressable
-            testID={`enable-${permission.id}`}
-            accessibilityRole="button"
-            accessibilityLabel={`Enable ${permission.title}`}
-            onPress={onPress}
-            style={({ pressed }) => [
-              styles.enable,
-              { borderColor: colors.accent, opacity: pressed ? 0.7 : 1 },
-            ]}
-          >
-            <Text style={[styles.enableLabel, { color: colors.accentOnSurface }]}>Enable</Text>
-          </Pressable>
-        ) : null}
-      </View>
-    </View>
   );
 }
 
