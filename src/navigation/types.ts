@@ -14,6 +14,7 @@ export type RootStackParamList = {
   Permissions: undefined;
   Schedules: undefined;
   DailyLimits: undefined;
+  Insights: undefined;
   /** Omit limitId to create; pass one to edit. */
   CreateDailyLimit: { limitId?: string } | undefined;
   /**

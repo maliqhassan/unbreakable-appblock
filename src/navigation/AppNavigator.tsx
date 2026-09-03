@@ -14,6 +14,7 @@ import { AuthScreen } from '../screens/AuthScreen';
 import { DiagnosticsScreen } from '../screens/DiagnosticsScreen';
 import { EmailAuthScreen } from '../screens/EmailAuthScreen';
 import { HomeScreen } from '../screens/HomeScreen';
+import { InsightsScreen } from '../screens/InsightsScreen';
 import { LockConfigurationScreen } from '../screens/LockConfigurationScreen';
 import { OnboardingCompleteScreen } from '../screens/OnboardingCompleteScreen';
 import { OnboardingHowItWorksScreen } from '../screens/OnboardingHowItWorksScreen';
@@ -165,6 +166,11 @@ export function AppNavigator() {
           name="Permissions"
           component={PermissionsScreen}
           options={{ title: 'Permissions' }}
+        />
+        <Stack.Screen
+          name="Insights"
+          component={InsightsScreen}
+          options={{ title: 'Screen time' }}
         />
         <Stack.Screen
           name="DailyLimits"

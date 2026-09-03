@@ -341,6 +341,14 @@ class UnbreakableLockModule : Module() {
         /** Forces a re-measure, e.g. when the app returns to the foreground. */
         AsyncFunction("refreshDailyLimits") { DailyLimitEngine.evaluate(context) }
 
+        /**
+         * Screen time for the last [days] days: a per-day total for the chart,
+         * and today's apps with their categories.
+         */
+        AsyncFunction("getScreenTimeReport") { days: Int ->
+            ScreenTimeQuery.reportJson(context, days.coerceIn(1, 14))
+        }
+
         // --- Schedules ---
 
         /**

@@ -4,6 +4,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AdBanner } from '../components/AdBanner';
+import { StatFigure } from '../components/StatFigure';
+import { TrendBars } from '../components/TrendBars';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { radius, spacing, typography, useTheme } from '../constants/theme';
 import { usePermissionStatus } from '../hooks/usePermissionStatus';
@@ -14,7 +16,16 @@ import { pairLimits, useDailyLimitStore } from '../store/useDailyLimitStore';
 import { summariseSchedules, useScheduleStore } from '../store/useScheduleStore';
 import type { DailyUsageLimit, DailyUsageStatus, LockSchedule } from '../types';
 import { FREE_FEATURES, PRO_BENEFITS } from '../constants/limits';
+import { ScreenTimeService } from '../services/ScreenTimeService';
 import { formatUsageSummary } from '../utils/dailyUsage';
+import {
+  dailyAverage,
+  EMPTY_REPORT,
+  formatDuration,
+  totalsByCategory,
+  totalToday,
+  type ScreenTimeReport,
+} from '../utils/screenTime';
 import { formatDays, formatTimeLabel, formatTimeRange } from '../utils/schedule';
 import { formatClockTime } from '../utils/time';
 
@@ -150,8 +161,12 @@ export function HomeScreen({ navigation }: ScreenProps<'Home'>) {
           />
         </View>
 
-        {/* Directly under the hero: a manual lock is what you do today, a daily
-            limit is what keeps working every day after. It earns the position. */}
+        {/* Evidence before decisions: knowing you spent two hours is what makes
+            a fifteen-minute limit mean anything. */}
+        <FocusTrendsCard />
+
+        {/* A manual lock is what you do today, a daily limit is what keeps
+            working every day after. It earns the position. */}
         <DailyLimitsCard limits={dailyLimits} statuses={dailyStatuses} />
 
         {/* Two-up status grid: protection on the left, plan on the right. */}
@@ -600,6 +615,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   limitBlock: { gap: spacing.xs, marginTop: spacing.xs },
+  trendRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, marginTop: spacing.xs },
+  trendFigures: { flex: 1, gap: spacing.md },
+  trendChart: { flex: 1.1 },
+  trendTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md },
+  trendDot: { width: 8, height: 8, borderRadius: 4 },
   homeTrack: {
     height: 6,
     borderRadius: 3,
@@ -670,3 +690,69 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
 });
+
+/**
+ * Today's screen time, and the week's shape, on the way past.
+ *
+ * A summary rather than the full breakdown: enough to notice a bad week
+ * without turning Home into a dashboard. Tapping opens the real thing.
+ *
+ * Renders nothing at all when usage access is off. The Home screen already
+ * carries a protection warning in that case, and a second empty card saying
+ * the same thing would be noise.
+ */
+function FocusTrendsCard() {
+  const { colors } = useTheme();
+  const navigation = useNavigation();
+  const [report, setReport] = useState<ScreenTimeReport>(EMPTY_REPORT);
+
+  useEffect(() => {
+    void ScreenTimeService.getReport(7).then(setReport);
+  }, []);
+
+  if (!report.available || report.apps.length === 0) return null;
+
+  const categories = totalsByCategory(report.apps);
+  const top = categories[0];
+
+  return (
+    <Pressable
+      testID="home-focus-trends"
+      accessibilityRole="button"
+      accessibilityLabel="Screen time and focus trends"
+      onPress={() => navigation.navigate('Insights')}
+      style={({ pressed }) => [
+        styles.panel,
+        {
+          backgroundColor: colors.surface,
+          borderColor: colors.border,
+          opacity: pressed ? 0.85 : 1,
+        },
+      ]}
+    >
+      <View style={styles.panelHead}>
+        <Text style={[styles.eyebrow, { color: colors.textFaint }]}>Focus trends</Text>
+        <Text style={[styles.chevron, { color: colors.textFaint }]}>›</Text>
+      </View>
+
+      <View style={styles.trendRow}>
+        <View style={styles.trendFigures}>
+          <StatFigure label="Today" seconds={totalToday(report)} size="large" />
+          <StatFigure label="Daily average" seconds={dailyAverage(report)} />
+        </View>
+        <View style={styles.trendChart}>
+          <TrendBars days={report.days} dominant={top?.id} height={56} />
+        </View>
+      </View>
+
+      {top ? (
+        <View style={styles.trendTop}>
+          <View style={[styles.trendDot, { backgroundColor: top.color }]} />
+          <Text style={[styles.panelBody, { color: colors.textMuted }]}>
+            Mostly {top.label.toLowerCase()} — {formatDuration(top.seconds)} today
+          </Text>
+        </View>
+      ) : null}
+    </Pressable>
+  );
+}
