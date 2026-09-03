@@ -8,7 +8,8 @@ import { useColorScheme, type ColorSchemeName } from 'react-native';
  * hand them. The light palette is kept in step so the app still behaves if the
  * theme is ever set back to `automatic` in app.config.js.
  *
- * The look: deep navy ground, one calm teal accent, large tight-tracked headings,
+ * The look: deep navy ground, a monochrome accent taken from the logo, large
+ * tight-tracked headings,
  * generous whitespace, softly rounded cards. Colour is used sparingly and
  * always means something — accent for action, green for protected, amber for
  * attention, red for broken.
@@ -28,36 +29,38 @@ const palette = {
     // even the large-text threshold, for text that is deliberately small.
     textFaint: '#8892A6',
     /**
-     * The brand. Used for action, selection and progress — never as decoration.
+     * The brand: the logo's own tone, used for action, selection and progress.
      *
-     * Teal rather than the original indigo. Two reasons beyond taste: a calm
-     * blue-green suits an app about putting the phone down better than a
-     * saturated purple, and the indigo scored 4.47:1 against the white label it
-     * carried — marginally under the readable threshold for a button, which is
-     * the one control that must never be hard to read.
+     * Monochrome on purpose. The app now has one place where colour carries
+     * meaning — the category chart — and a coloured accent competed with it,
+     * because a purple button and a purple category slice look like they are
+     * about the same thing. Reserving hue for data makes the chart the only
+     * colourful object on screen, which is what makes it read instantly.
+     *
+     * This is literally #E9ECF1 from scripts/generate-icons.mjs, so the launcher
+     * icon and the primary button are the same colour.
      */
-    accent: '#14B8A6',
-    accentSoft: 'rgba(20,184,166,0.14)',
+    accent: '#E9ECF1',
+    accentSoft: 'rgba(233,236,241,0.10)',
     /** The pressed state of a filled accent surface. */
-    accentPressed: '#0D9488',
+    accentPressed: '#CBD3DE',
     /**
      * Text ON an accent fill.
      *
-     * Dark, not white: teal is a light tone, so it carries dark type the way
-     * Material's own light-primary schemes do. White on this scores 2.5:1;
-     * the page's own background scores 7.9:1.
+     * The page's own background, so a primary button reads as the screen
+     * inverted rather than as a coloured object. 16.5:1.
      */
     accentText: '#0A0C12',
     /**
      * Accent-coloured TEXT on a dark surface.
      *
-     * The fill tone is tuned for a filled button, not for type. Links and status
-     * labels use this lighter tone instead, so the identity is kept without
-     * failing contrast.
+     * The same tone as the fill: on a dark ground it is already the most
+     * legible thing available, so there is no lighter variant to reach for.
+     * Emphasis here comes from weight, not hue.
      */
-    accentOnSurface: '#2DD4BF',
+    accentOnSurface: '#E9ECF1',
     /** A row or chip the user has chosen. Reads as selected without shouting. */
-    surfaceSelected: 'rgba(20,184,166,0.16)',
+    surfaceSelected: 'rgba(233,236,241,0.12)',
     danger: '#F87171',
     dangerSoft: 'rgba(248,113,113,0.12)',
     success: '#34D399',
@@ -76,15 +79,14 @@ const palette = {
     text: '#0A0C12',
     textMuted: '#525C6B',
     textFaint: '#5E6878',
-    // Darker than the dark theme's teal: on a white ground the fill has to
-    // carry white type, which needs the deeper tone (5.47:1).
-    accent: '#0F766E',
-    accentSoft: 'rgba(15,118,110,0.10)',
-    accentPressed: '#115E59',
+    // The mirror of the dark theme: the logo's plate colour, so a primary
+    // button is a near-black block on a white ground. 19.2:1.
+    accent: '#0D0F12',
+    accentSoft: 'rgba(13,15,18,0.06)',
+    accentPressed: '#23272E',
     accentText: '#FFFFFF',
-    // 5.47:1 on white, so the fill colour doubles as the text colour here.
-    accentOnSurface: '#0F766E',
-    surfaceSelected: 'rgba(15,118,110,0.12)',
+    accentOnSurface: '#0D0F12',
+    surfaceSelected: 'rgba(13,15,18,0.08)',
     danger: '#DC2626',
     dangerSoft: 'rgba(220,38,38,0.08)',
     success: '#059669',

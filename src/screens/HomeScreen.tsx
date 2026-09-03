@@ -1,11 +1,12 @@
 import { useNavigation } from '@react-navigation/native';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AdBanner } from '../components/AdBanner';
 import { StatFigure } from '../components/StatFigure';
 import { CategoryLegend } from '../components/CategoryLegend';
+import { useAnimatedProgress } from '../components/motion';
 import { HourlyChart } from '../components/HourlyChart';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { radius, spacing, typography, useTheme } from '../constants/theme';
@@ -384,16 +385,35 @@ function DailyLimitBar({
       </View>
 
       <View style={[styles.homeTrack, { backgroundColor: colors.surfaceMuted }]}>
-        {unknown ? null : (
-          <View
-            style={[
-              styles.homeFill,
-              { width: `${Math.round(fraction * 100)}%`, backgroundColor: tone },
-            ]}
-          />
-        )}
+        {unknown ? null : <LimitFill fraction={fraction} color={tone} />}
       </View>
     </View>
+  );
+}
+
+/**
+ * The filled portion of an allowance bar.
+ *
+ * Animated because the number it represents changes while you watch — the
+ * screen re-reads usage on focus, and a bar that jumps to a new width reads as
+ * a re-render rather than as time passing.
+ */
+function LimitFill({ fraction, color }: { fraction: number; color: string }) {
+  const width = useAnimatedProgress(fraction);
+  return (
+    <Animated.View
+      style={[
+        styles.homeFill,
+        {
+          backgroundColor: color,
+          width: width.interpolate({
+            inputRange: [0, 1],
+            outputRange: ['0%', '100%'],
+            extrapolate: 'clamp',
+          }),
+        },
+      ]}
+    />
   );
 }
 

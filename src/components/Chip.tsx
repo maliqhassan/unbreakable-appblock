@@ -1,7 +1,7 @@
-import { StyleSheet, Text } from 'react-native';
+import { Animated, StyleSheet, Text } from 'react-native';
 
 import { HIT_SIZE, radius, spacing, typography, useTheme } from '../constants/theme';
-import { PressableScale } from './motion';
+import { PressableScale, useAnimatedProgress } from './motion';
 
 interface Props {
   label: string;
@@ -24,6 +24,10 @@ interface Props {
 export function Chip({ label, selected, onPress, disabled = false, testID }: Props) {
   const { colors } = useTheme();
 
+  // The tint and the border cross-fade together, so picking a different preset
+  // reads as one selection moving rather than two chips blinking.
+  const on = useAnimatedProgress(selected ? 1 : 0);
+
   return (
     <PressableScale
       testID={testID}
@@ -32,15 +36,24 @@ export function Chip({ label, selected, onPress, disabled = false, testID }: Pro
       accessibilityLabel={label}
       disabled={disabled}
       onPress={onPress}
-      style={[
-        styles.chip,
-        {
-          backgroundColor: selected ? colors.surfaceSelected : colors.surfaceMuted,
-          borderColor: selected ? colors.accent : 'transparent',
-          opacity: disabled ? 0.5 : 1,
-        },
-      ]}
+      style={[styles.chip, { opacity: disabled ? 0.5 : 1 }]}
     >
+      <Animated.View
+        style={[
+          StyleSheet.absoluteFill,
+          styles.fill,
+          {
+            backgroundColor: on.interpolate({
+              inputRange: [0, 1],
+              outputRange: [colors.surfaceMuted, colors.surfaceSelected],
+            }),
+            borderColor: on.interpolate({
+              inputRange: [0, 1],
+              outputRange: ['rgba(0,0,0,0)', colors.accent],
+            }),
+          },
+        ]}
+      />
       <Text
         style={[
           styles.label,
@@ -58,10 +71,12 @@ const styles = StyleSheet.create({
   chip: {
     minHeight: HIT_SIZE - 4,
     justifyContent: 'center',
-    borderWidth: 1.5,
     borderRadius: radius.pill,
     paddingHorizontal: spacing.lg,
+    overflow: 'hidden',
   },
+  // The animated layer carries the fill and border so both can interpolate.
+  fill: { borderWidth: 1.5, borderRadius: radius.pill },
   label: { ...typography.label, textAlign: 'center' },
   labelSelected: { fontWeight: '700' },
 });

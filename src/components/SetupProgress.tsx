@@ -1,6 +1,7 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Animated, StyleSheet, Text, View } from 'react-native';
 
 import { spacing, typography, useTheme } from '../constants/theme';
+import { useAnimatedProgress } from './motion';
 
 interface Props {
   completed: number;
@@ -33,19 +34,11 @@ export function SetupProgress({ completed, total, label = 'Setup' }: Props) {
     >
       <View style={styles.track}>
         {Array.from({ length: safeTotal }, (_, index) => (
-          <View
+          <Segment
             key={index}
-            style={[
-              styles.segment,
-              {
-                backgroundColor:
-                  index < done
-                    ? finished
-                      ? colors.success
-                      : colors.accent
-                    : colors.surfaceMuted,
-              },
-            ]}
+            filled={index < done}
+            color={finished ? colors.success : colors.accent}
+            empty={colors.surfaceMuted}
           />
         ))}
       </View>
@@ -54,6 +47,38 @@ export function SetupProgress({ completed, total, label = 'Setup' }: Props) {
         {finished ? 'All set' : `${done} of ${safeTotal} complete`}
       </Text>
     </View>
+  );
+}
+
+/**
+ * One segment, which fills when its permission is granted.
+ *
+ * Granting a permission means leaving the app for Settings and coming back, so
+ * the change lands during a screen transition. Animating it is what makes the
+ * progress feel earned rather than simply different from before.
+ */
+function Segment({
+  filled,
+  color,
+  empty,
+}: {
+  filled: boolean;
+  color: string;
+  empty: string;
+}) {
+  const on = useAnimatedProgress(filled ? 1 : 0);
+  return (
+    <Animated.View
+      style={[
+        styles.segment,
+        {
+          backgroundColor: on.interpolate({
+            inputRange: [0, 1],
+            outputRange: [empty, color],
+          }),
+        },
+      ]}
+    />
   );
 }
 

@@ -1,7 +1,9 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo } from 'react';
+import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 
 import { categoryFor } from '../constants/categories';
-import { spacing, typography, useTheme } from '../constants/theme';
+import { motion, spacing, typography, useTheme } from '../constants/theme';
+import { useReducedMotion } from './motion';
 import {
   HOUR_AXIS_LABELS,
   hourlyAxis,
@@ -100,7 +102,14 @@ export function HourlyChart({ hours, height = 120, showAxis = true }: Props) {
   );
 }
 
-/** One hour: a stack of category-coloured slices, tallest slice at the base. */
+/**
+ * One hour: a stack of category-coloured slices, tallest slice at the base.
+ *
+ * The column grows up from the baseline on first render. A chart that animates
+ * in is doing something a static one cannot: it shows the axis it is measured
+ * against, because the eye watches the bar travel from zero. Staggering by hour
+ * makes the day read left to right, the direction it is meant to be read.
+ */
 function HourColumn({
   bucket,
   ceiling,
@@ -110,15 +119,46 @@ function HourColumn({
   ceiling: number;
   height: number;
 }) {
-  if (bucket.total <= 0) return <View style={styles.column} />;
+  const reduced = useReducedMotion();
+  const grow = useMemo(() => new Animated.Value(reduced ? 1 : 0), [reduced]);
 
   // Clamped: an hour can technically exceed the ceiling when several apps
   // overlap in Android's records, and a bar taller than the chart looks broken.
-  const columnHeight = Math.min(1, bucket.total / ceiling) * height;
+  const columnHeight = Math.max(2, Math.min(1, bucket.total / ceiling) * height);
+
+  useEffect(() => {
+    if (reduced) {
+      grow.setValue(1);
+      return;
+    }
+    const animation = Animated.timing(grow, {
+      toValue: 1,
+      duration: motion.base,
+      // Capped so the last hour does not wait on a long queue of earlier ones.
+      delay: Math.min(bucket.hour * 18, 320),
+      easing: Easing.out(Easing.cubic),
+      // Height cannot run on the native driver.
+      useNativeDriver: false,
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [bucket.hour, columnHeight, grow, reduced]);
+
+  if (bucket.total <= 0) return <View style={styles.column} />;
 
   return (
     <View style={styles.column}>
-      <View style={[styles.stack, { height: Math.max(2, columnHeight) }]}>
+      <Animated.View
+        style={[
+          styles.stack,
+          {
+            height: grow.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, columnHeight],
+            }),
+          },
+        ]}
+      >
         {bucket.segments.map((segment, index) => (
           <View
             key={segment.category}
@@ -131,7 +171,7 @@ function HourColumn({
             }}
           />
         ))}
-      </View>
+      </Animated.View>
     </View>
   );
 }
