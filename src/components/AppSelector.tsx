@@ -58,7 +58,7 @@ export function AppSelector({ appName, iconBase64, onPress, testID }: Props) {
         >
           {chosen ? appName : 'Choose an app'}
         </Text>
-        <Text style={[styles.action, { color: colors.accent }]}>
+        <Text style={[styles.action, { color: colors.accentOnSurface }]}>
           {chosen ? 'Change app' : 'Pick from your installed apps'}
         </Text>
       </View>

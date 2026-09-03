@@ -84,7 +84,7 @@ export function RequirementsCard({ permissions, onOpenPermissions }: Props) {
               { borderColor: colors.accent, opacity: pressed ? 0.7 : 1 },
             ]}
           >
-            <Text style={[styles.buttonLabel, { color: colors.accent }]}>Open Settings</Text>
+            <Text style={[styles.buttonLabel, { color: colors.accentOnSurface }]}>Open Settings</Text>
           </Pressable>
         </>
       ) : null}

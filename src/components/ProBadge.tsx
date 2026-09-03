@@ -18,7 +18,7 @@ export function ProBadge({ testID }: { testID?: string }) {
       accessibilityLabel="Pro feature"
       style={[
         styles.badge,
-        { backgroundColor: colors.accentSoft, color: colors.accent },
+        { backgroundColor: colors.accentSoft, color: colors.accentOnSurface },
       ]}
     >
       PRO

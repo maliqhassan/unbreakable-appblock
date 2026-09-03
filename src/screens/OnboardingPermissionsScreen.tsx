@@ -179,7 +179,7 @@ function PermissionCard({
               { borderColor: colors.accent, opacity: pressed ? 0.7 : 1 },
             ]}
           >
-            <Text style={[styles.enableLabel, { color: colors.accent }]}>Enable</Text>
+            <Text style={[styles.enableLabel, { color: colors.accentOnSurface }]}>Enable</Text>
           </Pressable>
         ) : null}
       </View>

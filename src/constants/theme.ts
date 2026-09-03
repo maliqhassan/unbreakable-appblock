@@ -24,13 +24,24 @@ const palette = {
     borderStrong: '#333B4D',
     text: '#F5F7FA',
     textMuted: '#98A2B3',
-    textFaint: '#667085',
+    // Lightened from #667085, which scored 2.92:1 on surfaceRaised -- below
+    // even the large-text threshold, for text that is deliberately small.
+    textFaint: '#8892A6',
     /** The brand. Used for action, selection and progress — never as decoration. */
     accent: '#6366F1',
     accentSoft: 'rgba(99,102,241,0.14)',
     /** The pressed state of a filled accent surface. */
     accentPressed: '#4F46E5',
+    /** Text ON an accent fill. */
     accentText: '#FFFFFF',
+    /**
+     * Accent-coloured TEXT on a dark surface.
+     *
+     * The brand purple is a fill colour: as small text it scores 3.26:1 on
+     * surfaceRaised. Links and status labels use this lighter tone instead, so
+     * the identity is kept without failing contrast.
+     */
+    accentOnSurface: '#818CF8',
     /** A row or chip the user has chosen. Reads as selected without shouting. */
     surfaceSelected: 'rgba(99,102,241,0.16)',
     danger: '#F87171',
@@ -50,11 +61,13 @@ const palette = {
     borderStrong: '#CBD2DE',
     text: '#0A0C12',
     textMuted: '#525C6B',
-    textFaint: '#8A94A6',
+    textFaint: '#5E6878',
     accent: '#4F46E5',
     accentSoft: 'rgba(79,70,229,0.10)',
     accentPressed: '#4338CA',
     accentText: '#FFFFFF',
+    // Already 6.29:1 on white, so the fill colour doubles as the text colour.
+    accentOnSurface: '#4F46E5',
     surfaceSelected: 'rgba(79,70,229,0.12)',
     danger: '#DC2626',
     dangerSoft: 'rgba(220,38,38,0.08)',

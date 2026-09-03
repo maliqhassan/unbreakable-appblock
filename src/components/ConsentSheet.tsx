@@ -103,7 +103,7 @@ export function ConsentSheet({ visible, onAgree, onCancel }: Props) {
 
             <Text
               testID="consent-policy-link"
-              style={[styles.link, { color: colors.accent }]}
+              style={[styles.link, { color: colors.accentOnSurface }]}
               onPress={openPolicy}
               accessibilityRole="link"
             >

@@ -53,7 +53,7 @@ export function AppRow({ app, selected, onPress, locked = false }: Props) {
 
       {locked && !selected ? (
         <View style={[styles.proTag, { backgroundColor: colors.accentSoft }]}>
-          <Text style={[styles.proLabel, { color: colors.accent }]}>PRO</Text>
+          <Text style={[styles.proLabel, { color: colors.accentOnSurface }]}>PRO</Text>
         </View>
       ) : null}
 

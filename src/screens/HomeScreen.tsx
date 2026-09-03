@@ -115,10 +115,10 @@ export function HomeScreen({ navigation }: ScreenProps<'Home'>) {
             ]}
           >
             <View style={styles.runningHead}>
-              <Text style={[styles.eyebrow, { color: colors.accent }]}>
+              <Text style={[styles.eyebrow, { color: colors.accentOnSurface }]}>
                 {session.source === 'schedule' ? 'Scheduled lock' : 'Lock active'}
               </Text>
-              <Text style={[styles.chevron, { color: colors.accent }]}>›</Text>
+              <Text style={[styles.chevron, { color: colors.accentOnSurface }]}>›</Text>
             </View>
             <Text style={[styles.runningTime, { color: colors.text }]}>
               Until {formatClockTime(session.endTimestamp)}
@@ -299,8 +299,8 @@ function DailyLimitsCard({
       ]}
     >
       <View style={styles.panelHead}>
-        <Text style={[styles.eyebrow, { color: colors.accent }]}>Daily limits</Text>
-        <Text style={[styles.chevron, { color: colors.accent }]}>›</Text>
+        <Text style={[styles.eyebrow, { color: colors.accentOnSurface }]}>Daily limits</Text>
+        <Text style={[styles.chevron, { color: colors.accentOnSurface }]}>›</Text>
       </View>
 
       <Text style={[styles.featureTitle, { color: colors.text }]}>
@@ -509,7 +509,7 @@ function FreeCard({
       </View>
 
       <View style={[styles.upgrade, { backgroundColor: colors.accentSoft }]}>
-        <Text style={[styles.upgradeLabel, { color: colors.accent }]}>{upgradeLabel}</Text>
+        <Text style={[styles.upgradeLabel, { color: colors.accentOnSurface }]}>{upgradeLabel}</Text>
       </View>
     </Pressable>
   );
@@ -521,7 +521,7 @@ function ProCard() {
 
   return (
     <View style={[styles.panel, { backgroundColor: colors.surface, borderColor: colors.accent }]}>
-      <Text style={[styles.eyebrow, { color: colors.accent }]}>Your plan · Pro</Text>
+      <Text style={[styles.eyebrow, { color: colors.accentOnSurface }]}>Your plan · Pro</Text>
       <View style={styles.perks}>
         {PRO_BENEFITS.map((perk) => (
           <Text key={perk} style={[styles.perk, { color: colors.textMuted }]}>

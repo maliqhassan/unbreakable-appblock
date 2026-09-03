@@ -61,7 +61,7 @@ export function OnboardingHowItWorksScreen({
             ]}
           >
             <View style={[styles.iconWrap, { backgroundColor: colors.accentSoft }]}>
-              <Text style={[styles.number, { color: colors.accent }]}>{step.number}</Text>
+              <Text style={[styles.number, { color: colors.accentOnSurface }]}>{step.number}</Text>
             </View>
             <View style={styles.cardText}>
               <Text style={[styles.cardTitle, { color: colors.text }]}>{step.title}</Text>

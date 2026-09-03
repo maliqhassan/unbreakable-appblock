@@ -46,7 +46,7 @@ export function AccountButton() {
         onPress={() => navigation.navigate('Auth')}
         hitSlop={8}
       >
-        <Text style={[styles.signIn, { color: colors.accent }]}>Sign in</Text>
+        <Text style={[styles.signIn, { color: colors.accentOnSurface }]}>Sign in</Text>
       </Pressable>
     );
   }
