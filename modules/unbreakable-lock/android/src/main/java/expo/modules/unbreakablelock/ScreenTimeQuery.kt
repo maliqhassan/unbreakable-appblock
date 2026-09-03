@@ -30,8 +30,12 @@ object ScreenTimeQuery {
     /**
      * Apps below this are noise in a chart — a launcher redraw, a notification
      * shade tap. Excluding them keeps the breakdown readable.
+     *
+     * Kept low on purpose: usage only starts accruing once the user grants
+     * usage access, so on the first day there may be very little to show, and a
+     * high floor would leave the screen looking broken rather than new.
      */
-    private const val MIN_REPORTABLE_SECONDS = 60L
+    private const val MIN_REPORTABLE_SECONDS = 20L
 
     /**
      * Foreground seconds per app, for a run of days ending today.

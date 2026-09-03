@@ -706,14 +706,34 @@ function FocusTrendsCard() {
   const navigation = useNavigation();
   const [report, setReport] = useState<ScreenTimeReport>(EMPTY_REPORT);
 
+  const [loaded, setLoaded] = useState(false);
+
   useEffect(() => {
-    void ScreenTimeService.getReport(7).then(setReport);
+    let cancelled = false;
+    ScreenTimeService.getReport(7)
+      .then((next) => {
+        if (cancelled) return;
+        setReport(next);
+        setLoaded(true);
+      })
+      .catch(() => {
+        if (!cancelled) setLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  if (!report.available || report.apps.length === 0) return null;
+  // Nothing at all until the first read settles, so the card does not flash an
+  // empty state on the way to having data.
+  if (!loaded) return null;
 
   const categories = totalsByCategory(report.apps);
   const top = categories[0];
+  // The chart needs day totals, not the per-app list. Gating it on `apps`
+  // hid the whole card — and with it the only route to the Screen time
+  // screen — whenever today happened to be quiet.
+  const hasChart = report.days.some((seconds) => seconds > 0);
 
   return (
     <Pressable
@@ -735,24 +755,40 @@ function FocusTrendsCard() {
         <Text style={[styles.chevron, { color: colors.textFaint }]}>›</Text>
       </View>
 
-      <View style={styles.trendRow}>
-        <View style={styles.trendFigures}>
-          <StatFigure label="Today" seconds={totalToday(report)} size="large" />
-          <StatFigure label="Daily average" seconds={dailyAverage(report)} />
-        </View>
-        <View style={styles.trendChart}>
-          <TrendBars days={report.days} dominant={top?.id} height={56} />
-        </View>
-      </View>
+      {!report.available ? (
+        // Say why there is no chart. A card that silently renders nothing is
+        // indistinguishable from a broken one.
+        <Text style={[styles.panelBody, { color: colors.textMuted }]}>
+          Turn on Usage Access to see where your time goes.
+        </Text>
+      ) : (
+        <>
+          <View style={styles.trendRow}>
+            <View style={styles.trendFigures}>
+              <StatFigure label="Today" seconds={totalToday(report)} size="large" />
+              <StatFigure label="Daily average" seconds={dailyAverage(report)} />
+            </View>
+            <View style={styles.trendChart}>
+              <TrendBars days={report.days} dominant={top?.id} height={56} />
+            </View>
+          </View>
 
-      {top ? (
-        <View style={styles.trendTop}>
-          <View style={[styles.trendDot, { backgroundColor: top.color }]} />
-          <Text style={[styles.panelBody, { color: colors.textMuted }]}>
-            Mostly {top.label.toLowerCase()} — {formatDuration(top.seconds)} today
-          </Text>
-        </View>
-      ) : null}
+          {top ? (
+            <View style={styles.trendTop}>
+              <View style={[styles.trendDot, { backgroundColor: top.color }]} />
+              <Text style={[styles.panelBody, { color: colors.textMuted }]}>
+                Mostly {top.label.toLowerCase()} — {formatDuration(top.seconds)} today
+              </Text>
+            </View>
+          ) : (
+            <Text style={[styles.panelBody, { color: colors.textMuted }]}>
+              {hasChart
+                ? 'Tap to see the breakdown by category.'
+                : 'Android has no usage recorded yet. Come back after using your phone a little.'}
+            </Text>
+          )}
+        </>
+      )}
     </Pressable>
   );
 }
