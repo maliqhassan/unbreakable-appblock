@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   content: {
     flex: 1,
-    padding: spacing.lg,
+    padding: spacing.gutter,
     gap: spacing.xxl,
     justifyContent: 'center',
   },
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     borderTopWidth: 1,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.gutter,
     paddingTop: spacing.md,
     paddingBottom: spacing.sm,
   },

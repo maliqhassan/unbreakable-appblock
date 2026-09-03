@@ -253,7 +253,7 @@ function CapabilityLine({ label, value }: { label: string; value: boolean }) {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   content: {
-    padding: spacing.lg,
+    padding: spacing.gutter,
     gap: spacing.lg,
     paddingBottom: spacing.xl,
   },

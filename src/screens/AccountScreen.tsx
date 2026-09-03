@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
   stack: { gap: spacing.sm },
   safe: { flex: 1 },
   content: {
-    padding: spacing.lg,
+    padding: spacing.gutter,
     gap: spacing.lg,
   },
   profile: {
@@ -350,7 +350,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     borderTopWidth: 1,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.gutter,
     paddingTop: spacing.md,
     paddingBottom: spacing.sm,
   },

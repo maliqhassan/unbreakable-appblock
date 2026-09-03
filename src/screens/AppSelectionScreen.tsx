@@ -16,7 +16,7 @@ import { LogoLoader } from '../components/LogoLoader';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { SearchBar } from '../components/SearchBar';
 import { StatusBadge } from '../components/StatusBadge';
-import { spacing, typography, useTheme } from '../constants/theme';
+import { radius, spacing, typography, useTheme } from '../constants/theme';
 import { useSubscription } from '../hooks/useSubscription';
 import { LockService, usesSystemAppPicker } from '../services/LockService';
 import { useLockStore } from '../store/useLockStore';
@@ -415,7 +415,7 @@ const styles = StyleSheet.create({
   },
   notice: {
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: radius.md,
     padding: spacing.md,
   },
   noticeText: {

@@ -5,6 +5,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '../components/EmptyState';
 import { LogoLoader } from '../components/LogoLoader';
 import { PrimaryButton } from '../components/PrimaryButton';
+import { SectionHeader } from '../components/SectionHeader';
+import { FadeIn } from '../components/motion';
 import { StatFigure } from '../components/StatFigure';
 import { TrendBars } from '../components/TrendBars';
 import { radius, spacing, typography, useTheme } from '../constants/theme';
@@ -115,68 +117,76 @@ export function InsightsScreen({ navigation }: ScreenProps<'Insights'>) {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />
         }
       >
-        {/* Headline pair, in the reference's shape: two figures side by side. */}
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={styles.pair}>
-            <View style={styles.pairItem}>
-              <StatFigure label="Today" seconds={today} size="large" />
+        {/* One summary card, not three. Today, the week, the average and the
+            chart are one thought — splitting them across stacked cards made the
+            screen read as a settings list rather than as a report. */}
+        <FadeIn>
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            <View style={styles.pair}>
+              <View style={styles.pairItem}>
+                <StatFigure label="Today" seconds={today} size="large" />
+              </View>
+              <View style={styles.pairItem}>
+                <StatFigure label="This week" seconds={week} size="large" />
+              </View>
             </View>
-            <View style={styles.pairItem}>
-              <StatFigure label="This week" seconds={week} size="large" />
+
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+            <View style={styles.pair}>
+              <View style={styles.pairItem}>
+                <StatFigure label="Daily average" seconds={average} />
+              </View>
+              <View style={styles.chart}>
+                <TrendBars days={report.days} dominant={categories[0]?.id} />
+              </View>
             </View>
           </View>
-        </View>
+        </FadeIn>
 
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>Focus trends</Text>
-
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={styles.pair}>
-            <View style={styles.pairItem}>
-              <StatFigure label="Daily average" seconds={average} />
-            </View>
-            <View style={styles.chart}>
-              <TrendBars days={report.days} dominant={categories[0]?.id} />
-            </View>
-          </View>
-        </View>
-
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>By category</Text>
+        <SectionHeader
+          title="By category"
+          subtitle="Where today went, as each app describes itself."
+        />
 
         {categories.length === 0 ? (
-          <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={[styles.muted, { color: colors.textMuted }]}>
-              Nothing to show yet today. Come back after you&apos;ve used your phone a
-              little.
-            </Text>
-          </View>
+          <Text style={[styles.muted, { color: colors.textMuted }]}>
+            Nothing to show yet today. Come back after you&apos;ve used your phone a
+            little.
+          </Text>
         ) : (
           <>
-            <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <ShareBar categories={categories} />
-            </View>
+            <ShareBar categories={categories} />
 
-            {categories.map((category) => (
-              <Row
-                key={category.id}
-                color={category.color}
-                title={category.label}
-                subtitle={`${category.appCount} app${category.appCount === 1 ? '' : 's'}`}
-                value={formatDuration(category.seconds)}
-              />
+            {categories.map((category, index) => (
+              <FadeIn key={category.id} index={index}>
+                <Row
+                  color={category.color}
+                  title={category.label}
+                  subtitle={`${category.appCount} app${category.appCount === 1 ? '' : 's'}`}
+                  value={formatDuration(category.seconds)}
+                />
+              </FadeIn>
             ))}
           </>
         )}
 
         {topApps.length > 0 ? (
           <>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Most used today</Text>
-            {topApps.map((app) => (
-              <Row
-                key={app.packageName}
-                color={totalsByCategory([app])[0].color}
-                title={app.appName}
-                value={formatDuration(app.seconds)}
-              />
+            <SectionHeader title="Most used today" />
+            {topApps.map((app, index) => (
+              <FadeIn key={app.packageName} index={index}>
+                <Row
+                  color={totalsByCategory([app])[0].color}
+                  title={app.appName}
+                  value={formatDuration(app.seconds)}
+                />
+              </FadeIn>
             ))}
           </>
         ) : null}
@@ -248,22 +258,18 @@ function Row({
 
 const styles = StyleSheet.create({
   safe: { flex: 1 },
-  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl },
+  content: { padding: spacing.gutter, gap: spacing.md, paddingBottom: spacing.xxl },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
   card: {
     borderWidth: 1,
     borderRadius: radius.lg,
     padding: spacing.xl,
+    gap: spacing.lg,
   },
+  divider: { height: StyleSheet.hairlineWidth },
   pair: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
   pairItem: { flex: 1 },
   chart: { flex: 1.2 },
-  sectionTitle: {
-    ...typography.heading,
-    fontSize: 18,
-    marginTop: spacing.sm,
-    marginBottom: -spacing.xs,
-  },
   shareTrack: {
     flexDirection: 'row',
     height: 12,

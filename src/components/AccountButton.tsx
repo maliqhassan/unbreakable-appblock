@@ -1,7 +1,7 @@
 import { useNavigation } from '@react-navigation/native';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { typography, useTheme } from '../constants/theme';
+import { radius, typography, useTheme } from '../constants/theme';
 import { useAuth } from '../hooks/useAuth';
 
 /**
@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
   },
   guestChip: {
     borderWidth: 1,
-    borderRadius: 999,
+    borderRadius: radius.pill,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },

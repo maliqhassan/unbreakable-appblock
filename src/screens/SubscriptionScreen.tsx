@@ -299,7 +299,7 @@ function formatDate(iso: string): string {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   content: {
-    padding: spacing.lg,
+    padding: spacing.gutter,
     gap: spacing.lg,
   },
   title: typography.display,
@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     borderTopWidth: 1,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.gutter,
     paddingTop: spacing.md,
     paddingBottom: spacing.sm,
     gap: spacing.sm,

@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
   presetChevron: { fontSize: 22, lineHeight: 22 },
   footer: {
     borderTopWidth: 1,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.gutter,
     paddingTop: spacing.md,
     paddingBottom: spacing.sm,
   },

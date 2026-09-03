@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import { Pressable, StyleSheet, Text, View, useColorScheme } from 'react-native';
 
 import { AccountButton } from '../components/AccountButton';
-import { getColors } from '../constants/theme';
+import { getColors, motion } from '../constants/theme';
 import { LogoLoader } from '../components/LogoLoader';
 import { AccountScreen } from '../screens/AccountScreen';
 import { ActiveLockScreen } from '../screens/ActiveLockScreen';
@@ -108,9 +108,17 @@ export function AppNavigator() {
           headerShadowVisible: false,
           headerTitleStyle: { fontWeight: '600' },
           contentStyle: { backgroundColor: colors.background },
+          // One transition for the whole app. Left unset, native-stack picks a
+          // default per platform and per presentation, so pushes and modals
+          // arrived differently on different screens for no reason the user
+          // could see.
+          animation: 'slide_from_right',
+          animationDuration: motion.base,
         }}
       >
-        <Stack.Group screenOptions={{ headerShown: false, gestureEnabled: false }}>
+        <Stack.Group
+          screenOptions={{ headerShown: false, gestureEnabled: false, animation: 'fade' }}
+        >
           <Stack.Screen name="OnboardingWelcome" component={OnboardingWelcomeScreen} />
           <Stack.Screen
             name="OnboardingHowItWorks"

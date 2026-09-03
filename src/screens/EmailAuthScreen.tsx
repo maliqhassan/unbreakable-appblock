@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: {
     flex: 1,
-    padding: spacing.lg,
+    padding: spacing.gutter,
     gap: spacing.md,
     justifyContent: 'center',
   },
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   error: typography.caption,
   footer: {
     borderTopWidth: 1,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.gutter,
     paddingTop: spacing.md,
     paddingBottom: spacing.sm,
     gap: spacing.sm,

@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
+import { ProBadge } from './ProBadge';
 import { spacing, typography, useTheme } from '../constants/theme';
 
 interface Props {
@@ -46,11 +47,7 @@ export function Toggle({
       <View style={styles.labels}>
         <View style={styles.titleRow}>
           <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
-          {locked ? (
-            <Text style={[styles.pro, { color: colors.accent, borderColor: colors.accent }]}>
-              PRO
-            </Text>
-          ) : null}
+          {locked ? <ProBadge /> : null}
         </View>
         {description ? (
           <Text style={[styles.description, { color: colors.textMuted }]}>{description}</Text>
@@ -90,15 +87,5 @@ const styles = StyleSheet.create({
     ...typography.caption,
     marginTop: 2,
     lineHeight: 18,
-  },
-  pro: {
-    ...typography.caption,
-    fontSize: 11,
-    fontWeight: '700',
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 1,
-    overflow: 'hidden',
   },
 });
