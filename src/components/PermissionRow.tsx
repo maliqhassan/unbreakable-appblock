@@ -26,23 +26,28 @@ export function PermissionRow({ permission, onEnable }: Props) {
   const { colors } = useTheme();
   const granted = permission.status === 'granted';
   const unavailable = permission.status === 'unavailable';
+  // Some settings live in a manufacturer's own app and Android gives no way to
+  // read them. Those stay actionable — the user can still be sent there — but
+  // are never reported as done or as missing.
+  const unknown = permission.status === 'unknown';
   const actionable = !granted && !unavailable;
 
   const statusColor = granted
     ? colors.success
-    : unavailable
-      ? colors.textFaint
-      : permission.optional
-        ? colors.textMuted
-        : colors.accent;
+    : unavailable || unknown || permission.optional
+      ? colors.textMuted
+      : // Legible accent, not the fill purple: as small text that scores 3.26:1.
+        colors.accentOnSurface;
 
   const statusLabel = granted
     ? 'Enabled'
     : unavailable
       ? 'Not applicable'
-      : permission.optional
-        ? 'Optional'
-        : 'Required';
+      : unknown
+        ? "Can't be checked"
+        : permission.optional
+          ? 'Optional'
+          : 'Required';
 
   return (
     <View

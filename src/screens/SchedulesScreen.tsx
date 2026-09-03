@@ -182,11 +182,13 @@ export function SchedulesScreen({ navigation }: ScreenProps<'Schedules'>) {
 
 function Notice({ tone, text }: { tone: 'warning' | 'info'; text: string }) {
   const { colors } = useTheme();
-  const accent = tone === 'warning' ? colors.warning : colors.accent;
+  const edge = tone === 'warning' ? colors.warning : colors.accent;
+  // The border can carry the brand purple; the text needs the legible tone.
+  const ink = tone === 'warning' ? colors.warning : colors.accentOnSurface;
 
   return (
-    <View style={[styles.notice, { borderColor: accent }]}>
-      <Text style={[styles.noticeText, { color: accent }]}>{text}</Text>
+    <View style={[styles.notice, { borderColor: edge }]}>
+      <Text style={[styles.noticeText, { color: ink }]}>{text}</Text>
     </View>
   );
 }

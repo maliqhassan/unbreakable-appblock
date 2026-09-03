@@ -184,6 +184,7 @@ export type PermissionId =
   | 'overlay'
   | 'notifications'
   | 'batteryOptimization'
+  | 'oemAutostart'
   | 'accessibility'
   | 'familyControls';
 

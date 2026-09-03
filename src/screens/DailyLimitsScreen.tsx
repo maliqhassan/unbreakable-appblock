@@ -186,7 +186,7 @@ export function DailyLimitsScreen({ navigation }: ScreenProps<'DailyLimits'>) {
 function Notice({ tone, text }: { tone: 'warning' | 'danger' | 'info'; text: string }) {
   const { colors } = useTheme();
   const fg =
-    tone === 'danger' ? colors.danger : tone === 'warning' ? colors.warning : colors.accent;
+    tone === 'danger' ? colors.danger : tone === 'warning' ? colors.warning : colors.accentOnSurface;
   const bg =
     tone === 'danger'
       ? colors.dangerSoft

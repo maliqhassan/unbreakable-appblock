@@ -76,6 +76,25 @@ class UnbreakableLockModule : Module() {
             out
         }
 
+        /**
+         * Whether this device's vendor needs a separate autostart grant, and
+         * what that vendor calls it.
+         *
+         * `granted` is deliberately absent: Android exposes no way to read the
+         * setting, so the app reports it as unknown rather than guessing.
+         */
+        Function("getOemAutostart") {
+            mapOf(
+                "needed" to OemSupport.needsAutostart(),
+                "label" to OemSupport.autostartLabel(),
+                "manufacturer" to Build.MANUFACTURER
+            )
+        }
+
+        AsyncFunction("openAutostartSettings") {
+            mapOf("opened" to OemSupport.openAutostartSettings(context))
+        }
+
         AsyncFunction("getInstalledApps") {
             AppInventory.listLaunchableApps(context).map { entry ->
                 mapOf(

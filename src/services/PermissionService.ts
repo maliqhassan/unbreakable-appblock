@@ -76,6 +76,17 @@ const ANDROID_PERMISSIONS: PermissionSpec[] = [
       'This changes how Android schedules the app. It grants no access to any of your data.',
     optional: true,
   },
+  {
+    id: 'oemAutostart',
+    title: 'Autostart',
+    icon: '♻️',
+    rationale: 'Required on Xiaomi, Oppo, Vivo and Huawei phones.',
+    explanation:
+      "Some manufacturers run their own power manager on top of Android's. On those phones, Android's own battery setting is not enough — there is a separate Autostart permission inside the manufacturer's security app, and without it your daily limits stop being measured and locks do not survive a restart.",
+    privacyNote:
+      'This only tells your phone to stop killing the app. It grants no access to any of your data.',
+    optional: true,
+  },
 ];
 
 const IOS_PERMISSIONS: PermissionSpec[] = [
@@ -93,9 +104,39 @@ const IOS_PERMISSIONS: PermissionSpec[] = [
 ];
 
 function specs(): PermissionSpec[] {
-  if (Platform.OS === 'android') return ANDROID_PERMISSIONS;
+  if (Platform.OS === 'android') {
+    // The autostart row only appears on the vendors that need it. Showing a
+    // Xiaomi-specific step to a Pixel owner is noise, and noise in a setup flow
+    // is how people stop reading it.
+    return ANDROID_PERMISSIONS.filter(
+      (spec) => spec.id !== 'oemAutostart' || oemAutostart().needed
+    );
+  }
   if (Platform.OS === 'ios') return IOS_PERMISSIONS;
   return [];
+}
+
+interface OemAutostart {
+  needed: boolean;
+  label: string;
+  manufacturer: string;
+}
+
+const NO_AUTOSTART: OemAutostart = { needed: false, label: 'Autostart', manufacturer: '' };
+
+/** Cached: the manufacturer cannot change while the app is running. */
+let oemCache: OemAutostart | null = null;
+
+export function oemAutostart(): OemAutostart {
+  if (oemCache) return oemCache;
+  const native = UnbreakableLock as unknown as { getOemAutostart?: () => OemAutostart };
+  if (typeof native?.getOemAutostart !== 'function') return NO_AUTOSTART;
+  try {
+    oemCache = native.getOemAutostart();
+    return oemCache ?? NO_AUTOSTART;
+  } catch {
+    return NO_AUTOSTART;
+  }
 }
 
 export const PermissionService = {
@@ -118,6 +159,13 @@ export const PermissionService = {
     }
 
     return specs().map((spec) => {
+      // Android exposes no way to read the vendor's autostart setting: no
+      // permission check, no AppOps entry, nothing. Reporting it as granted
+      // would tell someone they are protected when they may not be, and
+      // reporting it as denied would nag people who have already enabled it.
+      // Unknown is the only honest answer.
+      if (spec.id === 'oemAutostart') return { ...spec, status: 'unknown' as const };
+
       if (batch && spec.id in batch) {
         return { ...spec, status: batch[spec.id] ? ('granted' as const) : ('denied' as const) };
       }
@@ -158,6 +206,19 @@ export const PermissionService = {
    */
   async request(id: PermissionId): Promise<boolean> {
     if (!UnbreakableLock) return false;
+
+    // Not an Android permission: it lives in the vendor's own security app, so
+    // it needs the vendor's own intent.
+    if (id === 'oemAutostart') {
+      const native = UnbreakableLock as unknown as {
+        openAutostartSettings?: () => Promise<{ opened: boolean }>;
+      };
+      if (typeof native?.openAutostartSettings !== 'function') return false;
+      await native.openAutostartSettings();
+      // Nothing can be verified afterwards, so this never claims success.
+      return false;
+    }
+
     try {
       return await UnbreakableLock.requestPermission(id);
     } catch (err) {
