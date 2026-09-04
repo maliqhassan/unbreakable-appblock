@@ -1,6 +1,6 @@
 # Privacy Policy — Unbreakable Lock
 
-**Last updated: 2 September 2026**
+**Last updated: 4 September 2026**
 
 > **Published at** <https://maliqhassan.github.io/unbreakable-appblock/>.
 > The live page is [docs/index.html](docs/index.html); this Markdown copy is the
@@ -20,15 +20,27 @@ server belonging to us, so there is nowhere for that data to go.
 ### Usage Access (`PACKAGE_USAGE_STATS`)
 
 Android will not tell an app which other app is currently open unless you grant
-Usage Access in Settings. The app uses it for exactly two things:
+Usage Access in Settings. The app uses it for three things:
 
 - to notice when you open an app you have chosen to block, so it can show the
   block screen;
-- to measure how long you have used an app today, for daily usage limits.
+- to measure how long you have used an app today, for daily usage limits;
+- to show you your own screen time on the Screen Time screen.
 
-This reads **app names and usage times only**. It cannot read your messages,
-your screen contents, your photos, your keystrokes, or anything inside the apps
-you block. These figures are stored on your device and are never transmitted.
+The Screen Time screen reads usage for **every app on your phone**, not only
+the ones you have chosen to block, because a report that covered only your
+blocked apps would not tell you where your time actually goes. It reads the
+last seven days, broken down by hour, and it groups apps using the category
+each app's own developer declares about itself in Android.
+
+This reads **app names, categories and usage times only**. It cannot read your
+messages, your screen contents, your photos, your keystrokes, or anything
+inside the apps you use.
+
+None of these figures are stored by this app or transmitted anywhere. They are
+read from Android when a screen needs them and discarded when you leave it, so
+the app keeps no usage history of its own beyond what Android itself already
+holds.
 
 ### Installed app list
 

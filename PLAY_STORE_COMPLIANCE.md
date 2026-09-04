@@ -82,9 +82,17 @@ Data types to declare:
 - **Device or other IDs → Advertising ID** — collected and shared with Google
   AdMob. Purpose: *Advertising*.
 
-Do **not** declare app usage statistics as collected: they are read on the
-device, stored on the device, and never transmitted. Say so plainly if review
-asks — the code backs it up, since there is no server to send them to.
+Do **not** declare app usage statistics as collected.
+
+This is the answer most worth getting right, because the Screen Time screen
+looks like analytics and is not. It reads usage for every installed app, seven
+days back, hour by hour — but it reads it from Android on demand and discards it
+when you leave the screen. `ScreenTimeService` writes to no store and posts to
+no endpoint, and there is no server of ours to post to.
+
+Play's definition of *collected* is data transmitted off the device. Data read
+and shown on-device is not collected, so the honest answer here is "no". Say
+that plainly if review asks; the code backs it up.
 
 ### Advertising ID declaration
 
@@ -144,8 +152,18 @@ routinely removes blockers that use it to read the foreground app. This app uses
 ### No `QUERY_ALL_PACKAGES` ✅
 
 Play treats it as a restricted permission needing separate approval. The app
-instead declares a scoped `<queries>` element for launcher-visible apps, which
-needs no declaration.
+instead declares a scoped `<queries>` element: an intent filter for
+launcher-visible apps, plus six named manufacturer security packages so the
+Autostart button can reach MIUI's and ColorOS's own settings screens. Both are
+the narrow form and neither needs a declaration.
+
+### Vendor autostart is not a hidden service ✅
+
+`OemSupport` opens the manufacturer's own public settings activity and nothing
+else. It starts no service, changes no setting on the user's behalf, and cannot
+read whether the setting was granted — Android exposes no such API, which is why
+the app reports it as unknown rather than claiming a state. Nothing here evades
+a platform restriction; it navigates the user to a screen only they can act on.
 
 ### No deceptive claims ✅
 
